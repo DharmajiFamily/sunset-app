@@ -1,8 +1,9 @@
-const CACHE_NAME = 'sunset-widget-v1';
+const CACHE_NAME = 'sunset-widget-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './IMG_20261107_141610_576.jpg',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js'
 ];
