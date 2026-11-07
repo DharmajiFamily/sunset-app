@@ -9,16 +9,22 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "IMG_20261107_141610_576.jpg",
+      "src": "icon.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "IMG_20261107_141610_576.jpg",
+      "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
