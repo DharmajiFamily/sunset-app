@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One UI 9 Sunset Widget</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & One UI style sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        oneui: {
+                            bg: '#0F121C',
+                            card: 'rgba(30, 34, 53, 0.65)',
+                            cardLight: 'rgba(255, 255, 255, 0.08)',
+                            accent: '#F97316',
+                            purple: '#A855F7',
+                            gold: '#F59E0B',
+                            textMuted: '#94A3B8'
+                        }
+                    },
+                    borderRadius: {
+                        'oneui': '28px',
+                        'oneui-sm': '18px',
+                        'oneui-lg': '36px'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0d14;
+            color: #ffffff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Samsung Galaxy S24 Plus Frame Simulation */
+        .phone-frame {
+            width: 100%;
+            max-width: 412px;
+            height: 860px;
+            background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 60%, #05070f 100%);
+            border: 10px solid #1e2029;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 2px 2px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Glassmorphism Effect */
+        .glass-panel {
+            background: rgba(28, 32, 48, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 16px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Animated Sunset Gradient Accent */
+        .sunset-gradient-text {
+            background: linear-gradient(135deg, #FF7E5F 0%, #FEB47B 50%, #A855F7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sunset-gradient-bg {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body id="app-body" class="min-h-screen bg-slate-950 text-white font-sans antialiased selection:bg-orange-500 selection:text-white transition-colors duration-500">
+
+    <!-- STANDALONE APPLICATION CANVAS (NO PHONE FRAME) -->
+    <div class="max-w-4xl mx-auto px-4 py-6 sm:px-8 sm:py-10 flex flex-col gap-6 min-h-screen justify-between">
+        
+        <!-- HEADER BAR -->
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-5 rounded-oneui">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 text-xl">
+                    <i class="fa-solid fa-sun-plant-wilt"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold tracking-widest text-amber-400 uppercase">One UI 9.0</span>
+                        <span class="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded-full font-medium">Solar Suite</span>
+                    </div>
+                    <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                        Sunset Tracker
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Location Search & Locate Controls -->
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <div class="glass-card rounded-full p-1.5 flex items-center px-4 border border-white/10 w-full sm:w-72">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2.5"></i>
+                    <input type="text" id="city-input" placeholder="Search city (e.g., Manitowoc, WI)" 
+                        class="bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none w-full"
+                        onkeypress="handleSearch(event)">
+                    <button onclick="searchCity()" class="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold px-3 py-1.5 rounded-full hover:brightness-110 active:scale-95 transition">
+                        Find
+                    </button>
+                </div>
+                <button onclick="refreshLocationData()" class="p-3 rounded-full glass-card text-slate-200 hover:text-white hover:bg-white/15 active:scale-95 transition flex-shrink-0" title="Use current location">
+                    <i class="fa-solid fa-location-crosshairs text-base"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT DASHBOARD -->
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1">
+            
+            <!-- LEFT COLUMN: PRIMARY SUNSET COUNTDOWN & TIMELINE (7 COLS) -->
+            <section class="lg:col-span-7 flex flex-col gap-6">
+                
+                <!-- Main Featured Hero Widget -->
+                <div class="glass-panel rounded-oneui-lg p-6 sm:p-8 relative overflow-hidden transition-all duration-500">
+                    <!-- Glowing Orbs -->
+                    <div class="absolute -top-16 -right-16 w-56 h-56 bg-orange-500/25 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-16 -left-16 w-56 h-56 bg-purple-600/25 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Top Info Line -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                            <i class="fa-solid fa-location-dot text-amber-400"></i>
+                            <span id="location-display">Manitowoc, WI</span>
+                        </div>
+                        <span id="date-display" class="text-xs text-slate-400 font-medium glass-card px-3 py-1 rounded-full">
+                            Today
+                        </span>
+                    </div>
+
+                    <!-- Big Countdown Display -->
+                    <div class="text-center py-4 my-2 relative">
+                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Countdown To Sunset</span>
+                        <div id="countdown-timer" class="text-4xl sm:text-6xl font-black tracking-tight sunset-gradient-text drop-shadow-sm">
+                            00h 00m 00s
+                        </div>
+                        <div class="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-amber-300 font-medium">
+                            <i class="fa-solid fa-cloud-sun text-amber-400"></i>
+                            <span id="next-sunset-time">Calculating target...</span>
+                        </div>
+                    </div>
+
+                    <!-- Sun Trajectory Progress Bar -->
+                    <div class="mt-6 mb-2">
+                        <div class="flex justify-between text-xs text-slate-400 mb-2 font-medium">
+                            <span><i class="fa-solid fa-sun text-amber-400 me-1"></i> Sunrise</span>
+                            <span>Golden Hour</span>
+                            <span><i class="fa-solid fa-moon text-purple-400 me-1"></i> Sunset</span>
+                        </div>
+                        <div class="w-full bg-slate-800/80 rounded-full h-3 overflow-hidden p-0.5 border border-white/10">
+                            <div id="sun-progress-bar" class="bg-gradient-to-r from-amber-400 via-orange-500 to-purple-600 h-full rounded-full transition-all duration-1000 shadow-lg shadow-orange-500/50" style="width: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WEEKEND SUNSET DUAL CARDS (FRIDAY & SATURDAY) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    <!-- FRIDAY WIDGET CARD -->
+                    <div id="card-fri" onclick="selectDay('fri')" class="glass-panel rounded-oneui p-5 cursor-pointer border border-amber-500/40 shadow-lg hover:border-amber-400 transition-all duration-300 relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-xs">
+                                    Fri
+                                </div>
+                                <span class="font-bold text-sm text-white">Friday</span>
+                            </div>
+                            <span id="fri-date" class="text-xs text-slate-400">---</span>
+                        </div>
+                        
+                        <div class="my-3">
+                            <p class="text-xs text-slate-400 font-medium">Sunset Time</p>
+                            <p id="fri-sunset" class="text-2xl font-extrabold text-amber-400 mt-0.5 tracking-tight">--:-- PM</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-white/10 flex justify-between items-center text-xs text-slate-300">
+                            <span class="text-slate-400">Sunrise</span>
+                            <span id="fri-sunrise" class="font-semibold text-slate-200">--:-- AM</span>
+                        </div>
+                    </div>
+
+                    <!-- SATURDAY WIDGET CARD -->
+                    <div id="card-sat" onclick="selectDay('sat')" class="glass-panel rounded-oneui p-5 cursor-pointer border border-white/10 hover:border-purple-400 transition-all duration-300 relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-xs">
+                                    Sat
+                                </div>
+                                <span class="font-bold text-sm text-white">Saturday</span>
+                            </div>
+                            <span id="sat-date" class="text-xs text-slate-400">---</span>
+                        </div>
+                        
+                        <div class="my-3">
+                            <p class="text-xs text-slate-400 font-medium">Sunset Time</p>
+                            <p id="sat-sunset" class="text-2xl font-extrabold text-purple-400 mt-0.5 tracking-tight">--:-- PM</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-white/10 flex justify-between items-center text-xs text-slate-300">
+                            <span class="text-slate-400">Sunrise</span>
+                            <span id="sat-sunrise" class="font-semibold text-slate-200">--:-- AM</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- RIGHT COLUMN: DETAILED SOLAR METRICS & CONTROLS (5 COLS) -->
+            <section class="lg:col-span-5 flex flex-col gap-6">
+                
+                <!-- SOLAR METRICS TABBED PANEL -->
+                <div class="glass-panel rounded-oneui p-6 flex flex-col justify-between gap-5">
+                    
+                    <!-- Header with day toggle -->
+                    <div class="flex items-center justify-between pb-3 border-b border-white/10">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-amber-400"></i>
+                            <span>Day Details</span>
+                        </h2>
+                        <!-- Day Switcher Tabs -->
+                        <div class="bg-black/30 p-1 rounded-full flex text-xs font-semibold border border-white/10">
+                            <button id="tab-fri" onclick="selectDay('fri')" class="px-3 py-1 rounded-full transition bg-amber-500 text-slate-950">
+                                Friday
+                            </button>
+                            <button id="tab-sat" onclick="selectDay('sat')" class="px-3 py-1 rounded-full text-slate-400 hover:text-white transition">
+                                Saturday
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="grid grid-cols-2 gap-3">
+                        
+                        <div class="glass-card rounded-oneui-sm p-3.5 border border-white/5">
+                            <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-sun text-amber-400"></i> Golden Hour
+                            </p>
+                            <p id="metric-golden-hour" class="text-base font-bold text-white mt-1">--:-- PM</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Best photography light</p>
+                        </div>
+
+                        <div class="glass-card rounded-oneui-sm p-3.5 border border-white/5">
+                            <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-hourglass-half text-orange-400"></i> Day Length
+                            </p>
+                            <p id="metric-day-length" class="text-base font-bold text-white mt-1">--h --m</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Total sun duration</p>
+                        </div>
+
+                        <div class="glass-card rounded-oneui-sm p-3.5 border border-white/5">
+                            <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-moon text-indigo-400"></i> Civil Twilight
+                            </p>
+                            <p id="metric-twilight" class="text-base font-bold text-white mt-1">--:-- PM</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Dusk sky fully darkens</p>
+                        </div>
+
+                        <div class="glass-card rounded-oneui-sm p-3.5 border border-white/5">
+                            <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-compass text-purple-400"></i> Sunset Azimuth
+                            </p>
+                            <p id="metric-azimuth" class="text-base font-bold text-white mt-1">242° WSW</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Sun heading angle</p>
+                        </div>
+
+                    </div>
+
+                    <!-- Solar Noon Info -->
+                    <div class="glass-card rounded-oneui-sm p-4 border border-white/5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-arrows-up-to-line"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">Solar Noon (Peak Sun)</p>
+                                <p id="metric-solar-noon" class="text-sm font-bold text-white">--:-- PM</p>
+                            </div>
+                        </div>
+                        <span class="text-xs bg-amber-500/10 text-amber-300 font-semibold px-2.5 py-1 rounded-full">
+                            Highest Arc
+                        </span>
+                    </div>
+
+                </div>
+
+                <!-- THEME SELECTOR WIDGET -->
+                <div class="glass-panel rounded-oneui p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">One UI 9 Theme Preset</h3>
+                        <span class="text-[10px] text-slate-400">Adaptive UI</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setAppTheme('glass')" id="theme-btn-glass" class="p-2.5 rounded-oneui-sm bg-white/10 text-xs font-semibold text-white border border-amber-500/50 transition">
+                            Glassmorphism
+                        </button>
+                        <button onclick="setAppTheme('dusk')" id="theme-btn-dusk" class="p-2.5 rounded-oneui-sm bg-gradient-to-r from-orange-950/60 to-purple-950/60 text-xs font-semibold text-slate-300 border border-white/5 hover:border-white/20 transition">
+                            Dusk Glow
+                        </button>
+                        <button onclick="setAppTheme('light')" id="theme-btn-light" class="p-2.5 rounded-oneui-sm bg-slate-200 text-xs font-semibold text-slate-900 border border-white/20 hover:bg-white transition">
+                            Light UI
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="text-center text-xs text-slate-400 pt-4 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>Powered by Sunrise-Sunset Solar Engine • Samsung One UI 9.0 Aesthetic</span>
+            <span class="text-slate-400">Design System • S24+ Native App Layout</span>
+        </footer>
+
+    </div>
+
+    <script>
+        // Data State
+        let currentLocation = {
+            name: "Manitowoc, WI",
+            lat: 44.0886,
+            lng: -87.6576
+        };
+
+        let selectedDayKey = 'fri';
+        let friSolarData = null;
+        let satSolarData = null;
+        let targetSunsetDate = null;
+
+        window.onload = function() {
+            calculateDatesAndFetch();
+            startCountdownLoop();
+        };
+
+        function calculateDatesAndFetch() {
+            const now = new Date();
+            document.getElementById('date-display').innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+            const currentDay = now.getDay();
+            const friDate = new Date(now);
+            friDate.setDate(now.getDate() + (5 - currentDay));
+
+            const satDate = new Date(now);
+            satDate.setDate(now.getDate() + (6 - currentDay));
+
+            document.getElementById('fri-date').innerText = friDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('sat-date').innerText = satDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            fetchSolarTimes(currentLocation.lat, currentLocation.lng, friDate, satDate);
+        }
+
+        async function fetchSolarTimes(lat, lng, friDate, satDate) {
+            try {
+                const friStr = friDate.toISOString().split('T')[0];
+                const satStr = satDate.toISOString().split('T')[0];
+
+                const [friRes, satRes] = await Promise.all([
+                    fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${friStr}&formatted=0`),
+                    fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${satStr}&formatted=0`)
+                ]);
+
+                const friData = await friRes.json();
+                const satData = await satRes.json();
+
+                if (friData.status === "OK" && satData.status === "OK") {
+                    friSolarData = friData.results;
+                    satSolarData = satData.results;
+                    applySolarData();
+                } else {
+                    useFallbackData();
+                }
+            } catch (err) {
+                console.warn("Solar API fallback:", err);
+                useFallbackData();
+            }
+        }
+
+        function applySolarData() {
+            if (!friSolarData || !satSolarData) return;
+
+            const formatTime = (isoStr) => {
+                const d = new Date(isoStr);
+                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            };
+
+            const friSunset = new Date(friSolarData.sunset);
+            const friSunrise = new Date(friSolarData.sunrise);
+            const satSunset = new Date(satSolarData.sunset);
+            const satSunrise = new Date(satSolarData.sunrise);
+
+            document.getElementById('fri-sunset').innerText = formatTime(friSolarData.sunset);
+            document.getElementById('fri-sunrise').innerText = formatTime(friSolarData.sunrise);
+
+            document.getElementById('sat-sunset').innerText = formatTime(satSolarData.sunset);
+            document.getElementById('sat-sunrise').innerText = formatTime(satSolarData.sunrise);
+
+            // Determine next sunset for timer
+            const now = new Date();
+            if (now < friSunset) {
+                targetSunsetDate = friSunset;
+                document.getElementById('next-sunset-time').innerText = `Friday at ${formatTime(friSolarData.sunset)}`;
+            } else if (now < satSunset) {
+                targetSunsetDate = satSunset;
+                document.getElementById('next-sunset-time').innerText = `Saturday at ${formatTime(satSolarData.sunset)}`;
+            } else {
+                targetSunsetDate = satSunset;
+                document.getElementById('next-sunset-time').innerText = `Saturday at ${formatTime(satSolarData.sunset)}`;
+            }
+
+            renderTabMetrics();
+        }
+
+        function selectDay(dayKey) {
+            selectedDayKey = dayKey;
+            
+            const tabFri = document.getElementById('tab-fri');
+            const tabSat = document.getElementById('tab-sat');
+            const cardFri = document.getElementById('card-fri');
+            const cardSat = document.getElementById('card-sat');
+
+            if (dayKey === 'fri') {
+                tabFri.className = "px-3 py-1 rounded-full transition bg-amber-500 text-slate-950 font-bold";
+                tabSat.className = "px-3 py-1 rounded-full text-slate-400 hover:text-white transition font-semibold";
+                cardFri.className = "glass-panel rounded-oneui p-5 cursor-pointer border border-amber-500/50 shadow-lg relative overflow-hidden transition-all duration-300";
+                cardSat.className = "glass-panel rounded-oneui p-5 cursor-pointer border border-white/10 hover:border-purple-400 relative overflow-hidden transition-all duration-300";
+            } else {
+                tabSat.className = "px-3 py-1 rounded-full transition bg-purple-500 text-white font-bold";
+                tabFri.className = "px-3 py-1 rounded-full text-slate-400 hover:text-white transition font-semibold";
+                cardSat.className = "glass-panel rounded-oneui p-5 cursor-pointer border border-purple-500/50 shadow-lg relative overflow-hidden transition-all duration-300";
+                cardFri.className = "glass-panel rounded-oneui p-5 cursor-pointer border border-white/10 hover:border-amber-400 relative overflow-hidden transition-all duration-300";
+            }
+
+            renderTabMetrics();
+        }
+
+        function renderTabMetrics() {
+            const data = selectedDayKey === 'fri' ? friSolarData : satSolarData;
+            if (!data) return;
+
+            const formatTime = (isoStr) => {
+                const d = new Date(isoStr);
+                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            };
+
+            const sunsetDate = new Date(data.sunset);
+            const goldenHourStart = new Date(sunsetDate.getTime() - 45 * 60000);
+            document.getElementById('metric-golden-hour').innerText = formatTime(goldenHourStart.toISOString());
+
+            const dayLengthSec = data.day_length;
+            const hours = Math.floor(dayLengthSec / 3600);
+            const mins = Math.floor((dayLengthSec % 3600) / 60);
+            document.getElementById('metric-day-length').innerText = `${hours}h ${mins}m`;
+
+            document.getElementById('metric-twilight').innerText = formatTime(data.civil_twilight_end);
+            document.getElementById('metric-solar-noon').innerText = formatTime(data.solar_noon);
+        }
+
+        function useFallbackData() {
+            document.getElementById('fri-sunset').innerText = "4:34 PM";
+            document.getElementById('fri-sunrise').innerText = "6:42 AM";
+            document.getElementById('sat-sunset').innerText = "4:33 PM";
+            document.getElementById('sat-sunrise').innerText = "6:43 AM";
+            
+            document.getElementById('metric-golden-hour').innerText = "3:48 PM";
+            document.getElementById('metric-day-length').innerText = "9h 51m";
+            document.getElementById('metric-twilight').innerText = "5:03 PM";
+            document.getElementById('metric-solar-noon').innerText = "11:38 AM";
+
+            const now = new Date();
+            targetSunsetDate = new Date(now);
+            targetSunsetDate.setHours(16, 33, 0, 0);
+            document.getElementById('next-sunset-time').innerText = "Saturday at 4:33 PM";
+        }
+
+        function startCountdownLoop() {
+            setInterval(() => {
+                const now = new Date();
+                let target = targetSunsetDate;
+
+                if (!target) return;
+
+                let diff = target - now;
+
+                if (diff <= 0) {
+                    document.getElementById('countdown-timer').innerText = "Sun Has Set";
+                    document.getElementById('sun-progress-bar').style.width = "100%";
+                    return;
+                }
+
+                const hrs = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const mins = Math.floor((diff / (1000 * 60)) % 60);
+                const secs = Math.floor((diff / 1000) % 60);
+
+                document.getElementById('countdown-timer').innerText = 
+                    `${String(hrs).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+
+                const progress = Math.min(100, Math.max(0, 100 - (diff / (12 * 3600 * 1000)) * 100));
+                document.getElementById('sun-progress-bar').style.width = `${progress}%`;
+            }, 1000);
+        }
+
+        function refreshLocationData() {
+            if (navigator.geolocation) {
+                document.getElementById('location-display').innerText = "Locating...";
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        currentLocation.lat = pos.coords.latitude;
+                        currentLocation.lng = pos.coords.longitude;
+                        document.getElementById('location-display').innerText = `${currentLocation.lat.toFixed(2)}°, ${currentLocation.lng.toFixed(2)}°`;
+                        calculateDatesAndFetch();
+                    },
+                    (err) => {
+                        document.getElementById('location-display').innerText = "Manitowoc, WI";
+                        calculateDatesAndFetch();
+                    }
+                );
+            }
+        }
+
+        async function searchCity() {
+            const query = document.getElementById('city-input').value.trim();
+            if (!query) return;
+
+            document.getElementById('location-display').innerText = "Searching...";
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (data && data.length > 0) {
+                    const place = data[0];
+                    currentLocation.name = place.display_name.split(',')[0];
+                    currentLocation.lat = parseFloat(place.lat);
+                    currentLocation.lng = parseFloat(place.lon);
+
+                    document.getElementById('location-display').innerText = currentLocation.name;
+                    calculateDatesAndFetch();
+                } else {
+                    document.getElementById('location-display').innerText = "City Not Found";
+                }
+            } catch (e) {
+                document.getElementById('location-display').innerText = "Search Error";
+            }
+        }
+
+        function handleSearch(e) {
+            if (e.key === 'Enter') {
+                searchCity();
+            }
+        }
+
+        function setAppTheme(theme) {
+            const body = document.getElementById('app-body');
+            const btns = ['glass', 'dusk', 'light'];
+
+            btns.forEach(b => {
+                const el = document.getElementById(`theme-btn-${b}`);
+                if (el) el.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            });
+
+            const activeBtn = document.getElementById(`theme-btn-${theme}`);
+
+            if (theme === 'glass') {
+                body.className = "min-h-screen bg-slate-950 text-white font-sans antialiased selection:bg-orange-500 selection:text-white transition-colors duration-500";
+                if (activeBtn) activeBtn.style.borderColor = '#f97316';
+            } else if (theme === 'dusk') {
+                body.className = "min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white font-sans antialiased transition-colors duration-500";
+                if (activeBtn) activeBtn.style.borderColor = '#a855f7';
+            } else if (theme === 'light') {
+                body.className = "min-h-screen bg-slate-100 text-slate-900 font-sans antialiased transition-colors duration-500";
+                if (activeBtn) activeBtn.style.borderColor = '#0f172a';
+            }
+        }
+    </script>
+</body>
+</html>
