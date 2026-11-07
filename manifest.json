@@ -1,0 +1,24 @@
+{
+  "name": "Sabbath Time App ",
+  "short_name": "Sabbath Time",
+  "description": "Friday and Saturday Sunset Tracker for One UI 9.0",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0F0F13",
+  "theme_color": "#0F0F13",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
