@@ -1,6 +1,6 @@
 {
-  "name": "Sunset Widget One UI",
-  "short_name": "Sunset",
+  "name": "Sabbath Countdown App",
+  "short_name": "Sabbath Countdown",
   "description": "Friday and Saturday Sunset Tracker for One UI 9.0",
   "start_url": "./index.html",
   "display": "standalone",
