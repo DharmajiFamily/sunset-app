@@ -1,14 +1,14 @@
-const CACHE_NAME = 'sunset-widget-v2';
+const CACHE_NAME = 'sunset-widget-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './IMG_20261107_141610_576.jpg',
+  './icon.png',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js'
 ];
 
-// Cache core assets on install
+// Install Event - Caching core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -17,7 +17,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate and clean up old cache versions
+// Activate Event - Cleaning up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network-first strategy with cache fallback
+// Fetch Event - Network-first strategy with cache fallback
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
