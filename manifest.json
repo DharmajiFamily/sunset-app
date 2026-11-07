@@ -1,6 +1,6 @@
 {
-  "name": "Sabbath Time App ",
-  "short_name": "Sabbath Time",
+  "name": "Sunset Widget One UI",
+  "short_name": "Sunset",
   "description": "Friday and Saturday Sunset Tracker for One UI 9.0",
   "start_url": "./index.html",
   "display": "standalone",
@@ -11,13 +11,13 @@
     {
       "src": "IMG_20261107_141610_576.jpg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
       "src": "IMG_20261107_141610_576.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]
