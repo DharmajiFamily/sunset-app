@@ -4,18 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sabbath Time Finder</title>
+
+    <!-- PWA Manifest & App Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#0F0F13">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sunset">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts: Inter & One UI style sans -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Link Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0F0F13">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
 
     <script>
         tailwind.config = {
@@ -54,16 +59,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Samsung Galaxy S24 Plus Frame Simulation */
-        .phone-frame {
-            width: 100%;
-            max-width: 412px;
-            height: 860px;
-            background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 60%, #05070f 100%);
-            border: 10px solid #1e2029;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 0 2px 2px rgba(255, 255, 255, 0.1);
-        }
-
         /* Glassmorphism Effect */
         .glass-panel {
             background: rgba(28, 32, 48, 0.55);
@@ -87,10 +82,6 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .sunset-gradient-bg {
-            background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
-        }
-
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
@@ -106,7 +97,7 @@
 </head>
 <body id="app-body" class="min-h-screen bg-slate-950 text-white font-sans antialiased selection:bg-orange-500 selection:text-white transition-colors duration-500">
 
-    <!-- STANDALONE APPLICATION CANVAS (NO PHONE FRAME) -->
+    <!-- STANDALONE APPLICATION CANVAS -->
     <div class="max-w-4xl mx-auto px-4 py-6 sm:px-8 sm:py-10 flex flex-col gap-6 min-h-screen justify-between">
         
         <!-- HEADER BAR -->
@@ -247,7 +238,7 @@
             <!-- RIGHT COLUMN: DETAILED SOLAR METRICS & CONTROLS (5 COLS) -->
             <section class="lg:col-span-5 flex flex-col gap-6">
                 
-                <!-- SOLAR METRICS TABBED PANEL -->
+                <!-- SOLAR & LUNAR METRICS TABBED PANEL -->
                 <div class="glass-panel rounded-oneui p-6 flex flex-col justify-between gap-5">
                     
                     <!-- Header with day toggle -->
@@ -258,10 +249,10 @@
                         </h2>
                         <!-- Day Switcher Tabs -->
                         <div class="bg-black/30 p-1 rounded-full flex text-xs font-semibold border border-white/10">
-                            <button id="tab-fri" onclick="selectDay('fri')" class="px-3 py-1 rounded-full transition bg-amber-500 text-slate-950">
+                            <button id="tab-fri" onclick="selectDay('fri')" class="px-3 py-1 rounded-full transition bg-amber-500 text-slate-950 font-bold">
                                 Friday
                             </button>
-                            <button id="tab-sat" onclick="selectDay('sat')" class="px-3 py-1 rounded-full text-slate-400 hover:text-white transition">
+                            <button id="tab-sat" onclick="selectDay('sat')" class="px-3 py-1 rounded-full text-slate-400 hover:text-white transition font-semibold">
                                 Saturday
                             </button>
                         </div>
@@ -294,12 +285,13 @@
                             <p class="text-[10px] text-slate-400 mt-0.5">Dusk sky fully darkens</p>
                         </div>
 
+                        <!-- MOON PHASE METRIC CARD -->
                         <div class="glass-card rounded-oneui-sm p-3.5 border border-white/5">
                             <p class="text-xs text-slate-400 flex items-center gap-1.5">
-                                <i class="fa-solid fa-compass text-purple-400"></i> Sunset Azimuth
+                                <span id="metric-moon-icon" class="text-purple-300">🌑</span> Moon Phase
                             </p>
-                            <p id="metric-azimuth" class="text-base font-bold text-white mt-1">242° WSW</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Sun heading angle</p>
+                            <p id="metric-moon-phase" class="text-base font-bold text-white mt-1">Calculating...</p>
+                            <p id="metric-moon-illum" class="text-[10px] text-purple-300 mt-0.5">--% Illuminated</p>
                         </div>
 
                     </div>
@@ -347,7 +339,7 @@
 
         <!-- FOOTER -->
         <footer class="text-center text-xs text-slate-400 pt-4 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <span> &copy; House of Judah</span>
+            <span>&copy; House of Judah</span>
         </footer>
 
     </div>
@@ -361,6 +353,8 @@
         };
 
         let selectedDayKey = 'fri';
+        let friDateObj = null;
+        let satDateObj = null;
         let friSolarData = null;
         let satSolarData = null;
         let targetSunsetDate = null;
@@ -370,21 +364,52 @@
             startCountdownLoop();
         };
 
+        // Moon Phase Calculation Utility
+        function getMoonPhaseData(date) {
+            const LUNAR_MONTH = 29.530588853;
+            const time = date.getTime();
+            const tzoffset = date.getTimezoneOffset();
+            const julianDate = (time / 86400000) - (tzoffset / 1440) + 2440587.5;
+            
+            const daysIntoCycle = (julianDate - 2451550.1) % LUNAR_MONTH;
+            const age = daysIntoCycle < 0 ? daysIntoCycle + LUNAR_MONTH : daysIntoCycle;
+            const percent = age / LUNAR_MONTH;
+            
+            const illumination = Math.round((1 - Math.cos(percent * 2 * Math.PI)) / 2 * 100);
+
+            if (age < 1.84566) return { name: "New Moon", icon: "🌑", ill: illumination };
+            if (age < 5.53699) return { name: "Waxing Crescent", icon: "🌒", ill: illumination };
+            if (age < 9.22831) return { name: "First Quarter", icon: "🌓", ill: illumination };
+            if (age < 12.91963) return { name: "Waxing Gibbous", icon: "🌔", ill: illumination };
+            if (age < 16.61096) return { name: "Full Moon", icon: "🌕", ill: illumination };
+            if (age < 20.30228) return { name: "Waning Gibbous", icon: "🌖", ill: illumination };
+            if (age < 23.99361) return { name: "Last Quarter", icon: "🌗", ill: illumination };
+            if (age < 27.68493) return { name: "Waning Crescent", icon: "🌘", ill: illumination };
+            return { name: "New Moon", icon: "🌑", ill: illumination };
+        }
+
         function calculateDatesAndFetch() {
             const now = new Date();
             document.getElementById('date-display').innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-            const currentDay = now.getDay();
-            const friDate = new Date(now);
-            friDate.setDate(now.getDate() + (5 - currentDay));
+            const currentDay = now.getDay(); // 0 = Sun, 5 = Fri, 6 = Sat
 
-            const satDate = new Date(now);
-            satDate.setDate(now.getDate() + (6 - currentDay));
+            // Calculate next upcoming Friday
+            let daysUntilFri = (5 - currentDay + 7) % 7;
+            friDateObj = new Date(now);
+            friDateObj.setDate(now.getDate() + daysUntilFri);
+            friDateObj.setHours(0, 0, 0, 0);
 
-            document.getElementById('fri-date').innerText = friDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            document.getElementById('sat-date').innerText = satDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            // Calculate next upcoming Saturday
+            let daysUntilSat = (6 - currentDay + 7) % 7;
+            satDateObj = new Date(now);
+            satDateObj.setDate(now.getDate() + daysUntilSat);
+            satDateObj.setHours(0, 0, 0, 0);
 
-            fetchSolarTimes(currentLocation.lat, currentLocation.lng, friDate, satDate);
+            document.getElementById('fri-date').innerText = friDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('sat-date').innerText = satDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            fetchSolarTimes(currentLocation.lat, currentLocation.lng, friDateObj, satDateObj);
         }
 
         async function fetchSolarTimes(lat, lng, friDate, satDate) {
@@ -422,9 +447,7 @@
             };
 
             const friSunset = new Date(friSolarData.sunset);
-            const friSunrise = new Date(friSolarData.sunrise);
             const satSunset = new Date(satSolarData.sunset);
-            const satSunrise = new Date(satSolarData.sunrise);
 
             document.getElementById('fri-sunset').innerText = formatTime(friSolarData.sunset);
             document.getElementById('fri-sunrise').innerText = formatTime(friSolarData.sunrise);
@@ -432,7 +455,7 @@
             document.getElementById('sat-sunset').innerText = formatTime(satSolarData.sunset);
             document.getElementById('sat-sunrise').innerText = formatTime(satSolarData.sunrise);
 
-            // Determine next sunset for timer
+            // Accurately target the NEXT upcoming sunset
             const now = new Date();
             if (now < friSunset) {
                 targetSunsetDate = friSunset;
@@ -441,8 +464,8 @@
                 targetSunsetDate = satSunset;
                 document.getElementById('next-sunset-time').innerText = `Saturday at ${formatTime(satSolarData.sunset)}`;
             } else {
-                targetSunsetDate = satSunset;
-                document.getElementById('next-sunset-time').innerText = `Saturday at ${formatTime(satSolarData.sunset)}`;
+                targetSunsetDate = new Date(friSunset.getTime() + 7 * 24 * 60 * 60 * 1000);
+                document.getElementById('next-sunset-time').innerText = `Next Friday at ${formatTime(friSolarData.sunset)}`;
             }
 
             renderTabMetrics();
@@ -473,6 +496,15 @@
 
         function renderTabMetrics() {
             const data = selectedDayKey === 'fri' ? friSolarData : satSolarData;
+            const targetDate = selectedDayKey === 'fri' ? friDateObj : satDateObj;
+            
+            if (targetDate) {
+                const moon = getMoonPhaseData(targetDate);
+                document.getElementById('metric-moon-icon').innerText = moon.icon;
+                document.getElementById('metric-moon-phase').innerText = moon.name;
+                document.getElementById('metric-moon-illum').innerText = `${moon.ill}% Illuminated`;
+            }
+
             if (!data) return;
 
             const formatTime = (isoStr) => {
@@ -508,6 +540,8 @@
             targetSunsetDate = new Date(now);
             targetSunsetDate.setHours(16, 33, 0, 0);
             document.getElementById('next-sunset-time').innerText = "Saturday at 4:33 PM";
+
+            renderTabMetrics();
         }
 
         function startCountdownLoop() {
@@ -525,7 +559,7 @@
                     return;
                 }
 
-                const hrs = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const hrs = Math.floor(diff / (1000 * 60 * 60));
                 const mins = Math.floor((diff / (1000 * 60)) % 60);
                 const secs = Math.floor((diff / 1000) % 60);
 
@@ -610,18 +644,17 @@
             }
         }
     </script>
-    
 
-<!-- Register Service Worker -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
-        .catch((err) => console.error('Service Worker registration failed:', err));
-    });
-  }
-</script>
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+            .catch((err) => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
 
 </body>
 </html>
