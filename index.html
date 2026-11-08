@@ -137,7 +137,7 @@
         <!-- MAIN CONTENT DASHBOARD -->
         <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1">
             
-            <!-- LEFT COLUMN: PRIMARY SUNSET COUNTDOWN & TIMELINE (7 COLS) -->
+            <!-- LEFT COLUMN: PRIMARY SUNSET COUNTDOWN, TIMELINE & DEDICATED CARDS (7 COLS) -->
             <section class="lg:col-span-7 flex flex-col gap-6">
                 
                 <!-- Main Featured Hero Widget -->
@@ -233,12 +233,33 @@
 
                 </div>
 
+                <!-- DEDICATED MOON PHASE CARD -->
+                <div class="glass-panel rounded-oneui p-5 border border-purple-500/30 flex items-center justify-between relative overflow-hidden">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-400/30 flex items-center justify-center text-3xl text-purple-300 shadow-inner">
+                            <span id="standalone-moon-icon">🌑</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">Lunar Cycle</span>
+                                <span id="moon-card-day-label" class="text-xs text-slate-400">Friday</span>
+                            </div>
+                            <h3 id="standalone-moon-phase" class="text-xl font-extrabold text-white mt-0.5">Calculating Phase...</h3>
+                            <p id="standalone-moon-illum" class="text-xs text-purple-300 font-medium mt-0.5">--% Illuminated</p>
+                        </div>
+                    </div>
+                    <div class="hidden sm:flex flex-col items-end text-right">
+                        <span class="text-xs text-slate-400">Lunar Month</span>
+                        <span class="text-sm font-bold text-slate-200 mt-0.5">29.5 Days</span>
+                    </div>
+                </div>
+
             </section>
 
             <!-- RIGHT COLUMN: DETAILED SOLAR METRICS & CONTROLS (5 COLS) -->
             <section class="lg:col-span-5 flex flex-col gap-6">
                 
-                <!-- SOLAR & LUNAR METRICS TABBED PANEL -->
+                <!-- SOLAR METRICS TABBED PANEL -->
                 <div class="glass-panel rounded-oneui p-6 flex flex-col justify-between gap-5">
                     
                     <!-- Header with day toggle -->
@@ -285,13 +306,12 @@
                             <p class="text-[10px] text-slate-400 mt-0.5">Dusk sky fully darkens</p>
                         </div>
 
-                        <!-- MOON PHASE METRIC CARD -->
                         <div class="glass-card rounded-oneui-sm p-3.5 border border-white/5">
                             <p class="text-xs text-slate-400 flex items-center gap-1.5">
-                                <span id="metric-moon-icon" class="text-purple-300">🌑</span> Moon Phase
+                                <i class="fa-solid fa-compass text-purple-400"></i> Sunset Azimuth
                             </p>
-                            <p id="metric-moon-phase" class="text-base font-bold text-white mt-1">Calculating...</p>
-                            <p id="metric-moon-illum" class="text-[10px] text-purple-300 mt-0.5">--% Illuminated</p>
+                            <p id="metric-azimuth" class="text-base font-bold text-white mt-1">242° WSW</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Sun heading angle</p>
                         </div>
 
                     </div>
@@ -498,11 +518,13 @@
             const data = selectedDayKey === 'fri' ? friSolarData : satSolarData;
             const targetDate = selectedDayKey === 'fri' ? friDateObj : satDateObj;
             
+            // Calculate and display Dedicated Moon Card metrics
             if (targetDate) {
                 const moon = getMoonPhaseData(targetDate);
-                document.getElementById('metric-moon-icon').innerText = moon.icon;
-                document.getElementById('metric-moon-phase').innerText = moon.name;
-                document.getElementById('metric-moon-illum').innerText = `${moon.ill}% Illuminated`;
+                document.getElementById('standalone-moon-icon').innerText = moon.icon;
+                document.getElementById('standalone-moon-phase').innerText = moon.name;
+                document.getElementById('standalone-moon-illum').innerText = `${moon.ill}% Illuminated`;
+                document.getElementById('moon-card-day-label').innerText = selectedDayKey === 'fri' ? 'Friday' : 'Saturday';
             }
 
             if (!data) return;
