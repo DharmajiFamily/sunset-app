@@ -121,7 +121,7 @@
             <div class="flex items-center gap-2 w-full sm:w-auto">
                 <div class="glass-card rounded-full p-1.5 flex items-center px-4 border border-white/10 w-full sm:w-72">
                     <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2.5"></i>
-                    <input type="text" id="city-input" placeholder="Search city (e.g., Manitowoc, WI)" 
+                    <input type="text" id="city-input" placeholder="Search city (e.g., Charlotte, NC)" 
                         class="bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none w-full"
                         onkeypress="handleSearch(event)">
                     <button onclick="searchCity()" class="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold px-3 py-1.5 rounded-full hover:brightness-110 active:scale-95 transition">
@@ -249,8 +249,8 @@
                         </div>
                     </div>
                     <div class="hidden sm:flex flex-col items-end text-right">
-                        <span class="text-xs text-slate-400">Lunar Month</span>
-                        <span class="text-sm font-bold text-slate-200 mt-0.5">29.5 Days</span>
+                        <span class="text-xs text-slate-400">Target Date</span>
+                        <span id="moon-card-date-sub" class="text-sm font-bold text-slate-200 mt-0.5">---</span>
                     </div>
                 </div>
 
@@ -358,14 +358,9 @@
         </main>
 
         <!-- FOOTER -->
-        <footer>
-            <p>&copy; <span id="year"></span> Uno Developers. All rights reserved.</p>
+        <footer class="text-center text-xs text-slate-400 pt-4 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>&copy; House of Judah</span>
         </footer>
-
-        <script>
-            document.getElementById("year").textContent = new Date().getFullYear();
-        </script>
-
 
     </div>
 
@@ -374,7 +369,8 @@
         let currentLocation = {
             name: "Manitowoc, WI",
             lat: 44.0886,
-            lng: -87.6576
+            lng: -87.6576,
+            timezone: "America/Chicago"
         };
 
         let selectedDayKey = 'fri';
@@ -389,7 +385,7 @@
             startCountdownLoop();
         };
 
-        // Moon Phase Calculation Utility
+        // Precise Astronomical Moon Phase Calculation for any target Date
         function getMoonPhaseData(date) {
             const LUNAR_MONTH = 29.530588853;
             const time = date.getTime();
@@ -413,23 +409,50 @@
             return { name: "New Moon", icon: "🌑", ill: illumination };
         }
 
+        // Format ISO UTC string explicitly in target location's IANA timezone
+        function formatLocationTime(isoStr) {
+            if (!isoStr) return "--:-- PM";
+            const utcDate = new Date(isoStr);
+            try {
+                return utcDate.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: currentLocation.timezone
+                });
+            } catch (e) {
+                return utcDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            }
+        }
+
+        // Fetch official IANA timezone for requested coordinates
+        async function fetchTimezone(lat, lng) {
+            try {
+                const res = await fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`);
+                const data = await res.json();
+                if (data && data.timeZone) {
+                    currentLocation.timezone = data.timeZone;
+                }
+            } catch (e) {
+                console.warn("Timezone API fallback error:", e);
+            }
+        }
+
         function calculateDatesAndFetch() {
             const now = new Date();
             document.getElementById('date-display').innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
             const currentDay = now.getDay(); // 0 = Sun, 5 = Fri, 6 = Sat
 
-            // Calculate next upcoming Friday
             let daysUntilFri = (5 - currentDay + 7) % 7;
             friDateObj = new Date(now);
             friDateObj.setDate(now.getDate() + daysUntilFri);
-            friDateObj.setHours(0, 0, 0, 0);
+            friDateObj.setHours(12, 0, 0, 0);
 
-            // Calculate next upcoming Saturday
             let daysUntilSat = (6 - currentDay + 7) % 7;
             satDateObj = new Date(now);
             satDateObj.setDate(now.getDate() + daysUntilSat);
-            satDateObj.setHours(0, 0, 0, 0);
+            satDateObj.setHours(12, 0, 0, 0);
 
             document.getElementById('fri-date').innerText = friDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             document.getElementById('sat-date').innerText = satDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -439,6 +462,8 @@
 
         async function fetchSolarTimes(lat, lng, friDate, satDate) {
             try {
+                await fetchTimezone(lat, lng);
+
                 const friStr = friDate.toISOString().split('T')[0];
                 const satStr = satDate.toISOString().split('T')[0];
 
@@ -466,31 +491,25 @@
         function applySolarData() {
             if (!friSolarData || !satSolarData) return;
 
-            const formatTime = (isoStr) => {
-                const d = new Date(isoStr);
-                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            };
-
             const friSunset = new Date(friSolarData.sunset);
             const satSunset = new Date(satSolarData.sunset);
 
-            document.getElementById('fri-sunset').innerText = formatTime(friSolarData.sunset);
-            document.getElementById('fri-sunrise').innerText = formatTime(friSolarData.sunrise);
+            document.getElementById('fri-sunset').innerText = formatLocationTime(friSolarData.sunset);
+            document.getElementById('fri-sunrise').innerText = formatLocationTime(friSolarData.sunrise);
 
-            document.getElementById('sat-sunset').innerText = formatTime(satSolarData.sunset);
-            document.getElementById('sat-sunrise').innerText = formatTime(satSolarData.sunrise);
+            document.getElementById('sat-sunset').innerText = formatLocationTime(satSolarData.sunset);
+            document.getElementById('sat-sunrise').innerText = formatLocationTime(satSolarData.sunrise);
 
-            // Accurately target the NEXT upcoming sunset
             const now = new Date();
             if (now < friSunset) {
                 targetSunsetDate = friSunset;
-                document.getElementById('next-sunset-time').innerText = `Friday at ${formatTime(friSolarData.sunset)}`;
+                document.getElementById('next-sunset-time').innerText = `Friday at ${formatLocationTime(friSolarData.sunset)}`;
             } else if (now < satSunset) {
                 targetSunsetDate = satSunset;
-                document.getElementById('next-sunset-time').innerText = `Saturday at ${formatTime(satSolarData.sunset)}`;
+                document.getElementById('next-sunset-time').innerText = `Saturday at ${formatLocationTime(satSolarData.sunset)}`;
             } else {
                 targetSunsetDate = new Date(friSunset.getTime() + 7 * 24 * 60 * 60 * 1000);
-                document.getElementById('next-sunset-time').innerText = `Next Friday at ${formatTime(friSolarData.sunset)}`;
+                document.getElementById('next-sunset-time').innerText = `Next Friday at ${formatLocationTime(friSolarData.sunset)}`;
             }
 
             renderTabMetrics();
@@ -523,33 +542,29 @@
             const data = selectedDayKey === 'fri' ? friSolarData : satSolarData;
             const targetDate = selectedDayKey === 'fri' ? friDateObj : satDateObj;
             
-            // Calculate and display Dedicated Moon Card metrics
+            // Dynamically calculate and render Moon Phase specifically for THAT day
             if (targetDate) {
                 const moon = getMoonPhaseData(targetDate);
                 document.getElementById('standalone-moon-icon').innerText = moon.icon;
                 document.getElementById('standalone-moon-phase').innerText = moon.name;
                 document.getElementById('standalone-moon-illum').innerText = `${moon.ill}% Illuminated`;
                 document.getElementById('moon-card-day-label').innerText = selectedDayKey === 'fri' ? 'Friday' : 'Saturday';
+                document.getElementById('moon-card-date-sub').innerText = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             }
 
             if (!data) return;
 
-            const formatTime = (isoStr) => {
-                const d = new Date(isoStr);
-                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            };
-
             const sunsetDate = new Date(data.sunset);
             const goldenHourStart = new Date(sunsetDate.getTime() - 45 * 60000);
-            document.getElementById('metric-golden-hour').innerText = formatTime(goldenHourStart.toISOString());
+            document.getElementById('metric-golden-hour').innerText = formatLocationTime(goldenHourStart.toISOString());
 
             const dayLengthSec = data.day_length;
             const hours = Math.floor(dayLengthSec / 3600);
             const mins = Math.floor((dayLengthSec % 3600) / 60);
             document.getElementById('metric-day-length').innerText = `${hours}h ${mins}m`;
 
-            document.getElementById('metric-twilight').innerText = formatTime(data.civil_twilight_end);
-            document.getElementById('metric-solar-noon').innerText = formatTime(data.solar_noon);
+            document.getElementById('metric-twilight').innerText = formatLocationTime(data.civil_twilight_end);
+            document.getElementById('metric-solar-noon').innerText = formatLocationTime(data.solar_noon);
         }
 
         function useFallbackData() {
