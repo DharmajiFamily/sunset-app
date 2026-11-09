@@ -358,9 +358,14 @@
         </main>
 
         <!-- FOOTER -->
-        <footer class="text-center text-xs text-slate-400 pt-4 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <span>&copy; House of Judah</span>
+        <footer>
+            <p>&copy; <span id="year"></span> Uno Developers. All rights reserved.</p>
         </footer>
+
+        <script>
+            document.getElementById("year").textContent = new Date().getFullYear();
+        </script>
+
 
     </div>
 
