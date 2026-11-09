@@ -84,6 +84,7 @@
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
+            height: 6px;
             width: 6px;
         }
         ::-webkit-scrollbar-track {
@@ -182,7 +183,7 @@
                     </div>
                 </div>
 
-                <!-- WEEKEND SUNSET DUAL CARDS (FRIDAY & SATURDAY) -->
+                <!-- WEEKEND SUNSET DUAL CARDS (FRIDAY & SATURDAY ONLY) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     
                     <!-- FRIDAY WIDGET CARD -->
@@ -192,7 +193,7 @@
                                 <div class="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-xs">
                                     Fri
                                 </div>
-                                <span class="font-bold text-sm text-white">Friday</span>
+                                <span class="font-bold text-sm text-white">Friday Sunset</span>
                             </div>
                             <span id="fri-date" class="text-xs text-slate-400">---</span>
                         </div>
@@ -215,7 +216,7 @@
                                 <div class="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-xs">
                                     Sat
                                 </div>
-                                <span class="font-bold text-sm text-white">Saturday</span>
+                                <span class="font-bold text-sm text-white">Saturday Sunset</span>
                             </div>
                             <span id="sat-date" class="text-xs text-slate-400">---</span>
                         </div>
@@ -233,24 +234,23 @@
 
                 </div>
 
-                <!-- DEDICATED MOON PHASE CARD -->
-                <div class="glass-panel rounded-oneui p-5 border border-purple-500/30 flex items-center justify-between relative overflow-hidden">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-400/30 flex items-center justify-center text-3xl text-purple-300 shadow-inner">
-                            <span id="standalone-moon-icon">🌑</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">Lunar Cycle</span>
-                                <span id="moon-card-day-label" class="text-xs text-slate-400">Friday</span>
+                <!-- ALL DAYS MOON PHASE CARD -->
+                <div class="glass-panel rounded-oneui p-5 border border-purple-500/30 flex flex-col gap-4 relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300 text-xs font-bold">
+                                🌙
                             </div>
-                            <h3 id="standalone-moon-phase" class="text-xl font-extrabold text-white mt-0.5">Calculating Phase...</h3>
-                            <p id="standalone-moon-illum" class="text-xs text-purple-300 font-medium mt-0.5">--% Illuminated</p>
+                            <h3 class="text-sm font-bold text-white">Weekly Moon Phase Forecast</h3>
                         </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                            7-Day Cycle
+                        </span>
                     </div>
-                    <div class="hidden sm:flex flex-col items-end text-right">
-                        <span class="text-xs text-slate-400">Target Date</span>
-                        <span id="moon-card-date-sub" class="text-sm font-bold text-slate-200 mt-0.5">---</span>
+
+                    <!-- Horizontal Grid for All 7 Days -->
+                    <div id="weekly-moon-grid" class="grid grid-cols-7 gap-1 sm:gap-2 text-center pt-1">
+                        <!-- Populated dynamically via JS -->
                     </div>
                 </div>
 
@@ -358,13 +358,13 @@
         </main>
 
         <!-- FOOTER -->
-    <footer>
-        <p>&copy; <span id="year"></span> Uno Developers. All rights reserved.</p>
-    </footer>
+        <footer>
+            <p>&copy; <span id="year"></span> Uno Developers. All rights reserved.</p>
+        </footer>
 
-    <script>
-        document.getElementById("year").textContent = new Date().getFullYear();
-    </script>
+        <script>
+            document.getElementById("year").textContent = new Date().getFullYear();
+        </script>
 
 
     </div>
@@ -390,7 +390,7 @@
             startCountdownLoop();
         };
 
-        // Precise Astronomical Moon Phase Calculation for any target Date
+        // Moon Phase Calculation Engine
         function getMoonPhaseData(date) {
             const LUNAR_MONTH = 29.530588853;
             const time = date.getTime();
@@ -403,15 +403,43 @@
             
             const illumination = Math.round((1 - Math.cos(percent * 2 * Math.PI)) / 2 * 100);
 
-            if (age < 1.84566) return { name: "New Moon", icon: "🌑", ill: illumination };
-            if (age < 5.53699) return { name: "Waxing Crescent", icon: "🌒", ill: illumination };
-            if (age < 9.22831) return { name: "First Quarter", icon: "🌓", ill: illumination };
-            if (age < 12.91963) return { name: "Waxing Gibbous", icon: "🌔", ill: illumination };
-            if (age < 16.61096) return { name: "Full Moon", icon: "🌕", ill: illumination };
-            if (age < 20.30228) return { name: "Waning Gibbous", icon: "🌖", ill: illumination };
-            if (age < 23.99361) return { name: "Last Quarter", icon: "🌗", ill: illumination };
-            if (age < 27.68493) return { name: "Waning Crescent", icon: "🌘", ill: illumination };
-            return { name: "New Moon", icon: "🌑", ill: illumination };
+            if (age < 1.84566) return { name: "New", icon: "🌑", ill: illumination };
+            if (age < 5.53699) return { name: "Waxing Cres.", icon: "🌒", ill: illumination };
+            if (age < 9.22831) return { name: "1st Qtr", icon: "🌓", ill: illumination };
+            if (age < 12.91963) return { name: "Waxing Gibb.", icon: "🌔", ill: illumination };
+            if (age < 16.61096) return { name: "Full", icon: "🌕", ill: illumination };
+            if (age < 20.30228) return { name: "Waning Gibb.", icon: "🌖", ill: illumination };
+            if (age < 23.99361) return { name: "3rd Qtr", icon: "🌗", ill: illumination };
+            if (age < 27.68493) return { name: "Waning Cres.", icon: "🌘", ill: illumination };
+            return { name: "New", icon: "🌑", ill: illumination };
+        }
+
+        // Render full 7-day moon phase strip
+        function renderWeeklyMoonPhases() {
+            const grid = document.getElementById('weekly-moon-grid');
+            grid.innerHTML = '';
+            
+            const today = new Date();
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(today);
+                dayDate.setDate(today.getDate() + i);
+                
+                const moon = getMoonPhaseData(dayDate);
+                const dayName = i === 0 ? 'Today' : dayDate.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateNum = dayDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+                
+                const dayCard = document.createElement('div');
+                dayCard.className = `glass-card p-2 rounded-2xl flex flex-col items-center justify-between border ${i === 0 ? 'border-amber-500/50 bg-amber-500/10' : 'border-white/5'}`;
+                
+                dayCard.innerHTML = `
+                    <span class="text-[10px] font-bold text-slate-300 uppercase">${dayName}</span>
+                    <span class="text-[9px] text-slate-400 mb-1">${dateNum}</span>
+                    <span class="text-xl my-1">${moon.icon}</span>
+                    <span class="text-[10px] font-semibold text-purple-300 mt-1">${moon.ill}%</span>
+                `;
+                
+                grid.appendChild(dayCard);
+            }
         }
 
         // Format ISO UTC string explicitly in target location's IANA timezone
@@ -462,6 +490,7 @@
             document.getElementById('fri-date').innerText = friDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             document.getElementById('sat-date').innerText = satDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+            renderWeeklyMoonPhases();
             fetchSolarTimes(currentLocation.lat, currentLocation.lng, friDateObj, satDateObj);
         }
 
@@ -545,18 +574,6 @@
 
         function renderTabMetrics() {
             const data = selectedDayKey === 'fri' ? friSolarData : satSolarData;
-            const targetDate = selectedDayKey === 'fri' ? friDateObj : satDateObj;
-            
-            // Dynamically calculate and render Moon Phase specifically for THAT day
-            if (targetDate) {
-                const moon = getMoonPhaseData(targetDate);
-                document.getElementById('standalone-moon-icon').innerText = moon.icon;
-                document.getElementById('standalone-moon-phase').innerText = moon.name;
-                document.getElementById('standalone-moon-illum').innerText = `${moon.ill}% Illuminated`;
-                document.getElementById('moon-card-day-label').innerText = selectedDayKey === 'fri' ? 'Friday' : 'Saturday';
-                document.getElementById('moon-card-date-sub').innerText = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }
-
             if (!data) return;
 
             const sunsetDate = new Date(data.sunset);
