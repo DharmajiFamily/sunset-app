@@ -160,7 +160,7 @@
 
                     <!-- Big Countdown Display -->
                     <div class="text-center py-4 my-2 relative">
-                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Countdown To Sunset</span>
+                        <span id="countdown-label" class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 block">Countdown To Sabbath</span>
                         <div id="countdown-timer" class="text-4xl sm:text-6xl font-black tracking-tight sunset-gradient-text drop-shadow-sm">
                             00h 00m 00s
                         </div>
@@ -358,14 +358,13 @@
         </main>
 
         <!-- FOOTER -->
-        <footer>
+        <footer class="text-center text-xs text-slate-400 pt-4 border-t border-white/5">
             <p>&copy; <span id="year"></span> Uno Developers. All rights reserved.</p>
         </footer>
 
         <script>
             document.getElementById("year").textContent = new Date().getFullYear();
         </script>
-
 
     </div>
 
@@ -537,13 +536,16 @@
             const now = new Date();
             if (now < friSunset) {
                 targetSunsetDate = friSunset;
-                document.getElementById('next-sunset-time').innerText = `Friday at ${formatLocationTime(friSolarData.sunset)}`;
+                document.getElementById('countdown-label').innerText = "COUNTDOWN TO SABBATH";
+                document.getElementById('next-sunset-time').innerText = `Sabbath Begins: Friday at ${formatLocationTime(friSolarData.sunset)}`;
             } else if (now < satSunset) {
                 targetSunsetDate = satSunset;
-                document.getElementById('next-sunset-time').innerText = `Saturday at ${formatLocationTime(satSolarData.sunset)}`;
+                document.getElementById('countdown-label').innerText = "SABBATH IS OVER IN";
+                document.getElementById('next-sunset-time').innerText = `Sabbath Ends: Saturday at ${formatLocationTime(satSolarData.sunset)}`;
             } else {
                 targetSunsetDate = new Date(friSunset.getTime() + 7 * 24 * 60 * 60 * 1000);
-                document.getElementById('next-sunset-time').innerText = `Next Friday at ${formatLocationTime(friSolarData.sunset)}`;
+                document.getElementById('countdown-label').innerText = "COUNTDOWN TO SABBATH";
+                document.getElementById('next-sunset-time').innerText = `Sabbath Begins: Next Friday at ${formatLocationTime(friSolarData.sunset)}`;
             }
 
             renderTabMetrics();
@@ -603,7 +605,8 @@
             const now = new Date();
             targetSunsetDate = new Date(now);
             targetSunsetDate.setHours(16, 33, 0, 0);
-            document.getElementById('next-sunset-time').innerText = "Saturday at 4:33 PM";
+            document.getElementById('countdown-label').innerText = "COUNTDOWN TO SABBATH";
+            document.getElementById('next-sunset-time').innerText = "Sabbath Begins: Friday at 4:34 PM";
 
             renderTabMetrics();
         }
@@ -618,7 +621,7 @@
                 let diff = target - now;
 
                 if (diff <= 0) {
-                    document.getElementById('countdown-timer').innerText = "Sun Has Set";
+                    document.getElementById('countdown-timer').innerText = "00h 00m 00s";
                     document.getElementById('sun-progress-bar').style.width = "100%";
                     return;
                 }
