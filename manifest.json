@@ -1,6 +1,6 @@
 {
-  "name": "Sabbath Countdown",
-  "short_name": "Sabbath",
+  "name": "Sabbath Countdown App",
+  "short_name": "Sabbath Countdown",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0d14",
