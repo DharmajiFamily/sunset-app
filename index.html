@@ -101,6 +101,21 @@
     <!-- STANDALONE APPLICATION CANVAS -->
     <div class="max-w-4xl mx-auto px-4 py-6 sm:px-8 sm:py-10 flex flex-col gap-6 min-h-screen justify-between">
         
+        <!-- iOS INSTALL HELPER BANNER (Hidden automatically unless on iOS Safari outside standalone mode) -->
+        <div id="ios-install-banner" class="hidden glass-panel rounded-oneui p-4 border border-amber-500/40 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                </div>
+                <p class="text-xs text-slate-200 leading-relaxed">
+                    <strong class="text-white">Enable iPhone/iPad Alerts:</strong> Tap <span class="text-amber-300 font-semibold">Share</span> in Safari, then select <span class="text-amber-300 font-semibold">Add to Home Screen</span> and open from your icon.
+                </p>
+            </div>
+            <button onclick="dismissIosBanner()" class="text-slate-400 hover:text-white p-1.5 text-xs flex-shrink-0" title="Dismiss">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
         <!-- HEADER BAR -->
         <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-5 rounded-oneui">
             <div class="flex items-center gap-3">
@@ -353,7 +368,7 @@
                     </div>
                 </div>
 
-                <!-- NOTIFICATION SETTINGS WIDGET -->
+                <!-- NOTIFICATION & DEVICE SETTINGS WIDGET -->
                 <div class="glass-panel rounded-oneui p-5 flex flex-col gap-3">
                     <button onclick="toggleNotificationSettings()" class="flex justify-between items-center w-full text-left group">
                         <div class="flex items-center gap-2.5">
@@ -361,7 +376,7 @@
                                 <i class="fa-solid fa-bell"></i>
                             </div>
                             <div>
-                                <h3 class="text-sm font-bold text-white group-hover:text-amber-300 transition">Notification Settings</h3>
+                                <h3 class="text-sm font-bold text-white group-hover:text-amber-300 transition">Notification & Display Settings</h3>
                                 <p id="notif-status-summary" class="text-[11px] text-slate-400">Alerts Off • Tap to configure</p>
                             </div>
                         </div>
@@ -392,6 +407,21 @@
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-constant-fri" class="sr-only peer" onchange="handleConstantFriToggle()">
                                 <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Keep Screen Awake Toggle (Windows / Android / iOS) -->
+                        <div class="flex items-center justify-between glass-card p-3 rounded-oneui-sm border border-white/5">
+                            <div>
+                                <p class="text-xs font-bold text-white flex items-center gap-1.5">
+                                    <span>Keep Screen Awake</span>
+                                    <span id="wakelock-badge" class="hidden text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full">Active</span>
+                                </p>
+                                <p class="text-[10px] text-slate-400">Prevents sleep on Windows, Android & iOS</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-wake-lock" class="sr-only peer" onchange="handleWakeLockToggle()">
+                                <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                         </div>
 
@@ -434,20 +464,45 @@
         let satSolarData = null;
         let targetSunsetDate = null;
 
-        // Notification State
+        // Notification & Display State
         let notifSettings = {
             enabled: false,
-            constantFriday: false
+            constantFriday: false,
+            keepAwake: false
         };
         let sentMilestones = {};
         let lastConstantMinute = -1;
+        let wakeLockSentinel = null;
 
         window.onload = function() {
+            checkIosInstallBanner();
             loadSavedLocation();
             loadNotificationSettings();
             calculateDatesAndFetch();
             startCountdownLoop();
         };
+
+        // Detect iOS Safari outside standalone Home Screen mode
+        function checkIosInstallBanner() {
+            try {
+                const dismissed = localStorage.getItem('sabbathIosBannerDismissed');
+                if (dismissed === 'true') return;
+
+                const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+                const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+                if (isIos && !isStandalone) {
+                    document.getElementById('ios-install-banner').classList.remove('hidden');
+                }
+            } catch (e) {}
+        }
+
+        function dismissIosBanner() {
+            document.getElementById('ios-install-banner').classList.add('hidden');
+            try {
+                localStorage.setItem('sabbathIosBannerDismissed', 'true');
+            } catch (e) {}
+        }
 
         // Load & Save Last Viewed Location
         function loadSavedLocation() {
@@ -473,18 +528,23 @@
             }
         }
 
-        // Load saved notification preferences
+        // Load saved notification & wake lock preferences
         function loadNotificationSettings() {
             try {
                 const saved = localStorage.getItem('sabbathNotifSettings');
                 if (saved) {
-                    notifSettings = JSON.parse(saved);
+                    notifSettings = { ...notifSettings, ...JSON.parse(saved) };
                 }
             } catch (e) {}
 
             document.getElementById('toggle-all-notifs').checked = notifSettings.enabled;
             document.getElementById('toggle-constant-fri').checked = notifSettings.constantFriday;
+            document.getElementById('toggle-wake-lock').checked = notifSettings.keepAwake;
             updateNotifUIState();
+
+            if (notifSettings.keepAwake) {
+                requestWakeLock();
+            }
         }
 
         function saveNotificationSettings() {
@@ -506,7 +566,9 @@
                 summary.className = "text-[11px] text-amber-400 font-medium";
             } else {
                 constantRow.classList.add('opacity-50', 'pointer-events-none');
-                summary.innerText = "Alerts Off • Tap to configure";
+                summary.innerText = notifSettings.keepAwake
+                    ? "Alerts Off • Screen Awake On"
+                    : "Alerts Off • Tap to configure";
                 summary.className = "text-[11px] text-slate-400";
             }
         }
@@ -518,11 +580,60 @@
             chevron.classList.toggle('rotate-180');
         }
 
+        // Screen Wake Lock Management (Windows, Android, iOS 16.4+)
+        async function requestWakeLock() {
+            if (!('wakeLock' in navigator)) {
+                alert("Screen Wake Lock is not supported on this browser.");
+                document.getElementById('toggle-wake-lock').checked = false;
+                notifSettings.keepAwake = false;
+                saveNotificationSettings();
+                return;
+            }
+            try {
+                wakeLockSentinel = await navigator.wakeLock.request('screen');
+                document.getElementById('wakelock-badge').classList.remove('hidden');
+                wakeLockSentinel.addEventListener('release', () => {
+                    document.getElementById('wakelock-badge').classList.add('hidden');
+                });
+            } catch (err) {
+                console.warn("Wake Lock request failed:", err);
+                document.getElementById('wakelock-badge').classList.add('hidden');
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLockSentinel) {
+                try {
+                    await wakeLockSentinel.release();
+                } catch (e) {}
+                wakeLockSentinel = null;
+            }
+            document.getElementById('wakelock-badge').classList.add('hidden');
+        }
+
+        async function handleWakeLockToggle() {
+            const checked = document.getElementById('toggle-wake-lock').checked;
+            notifSettings.keepAwake = checked;
+            if (checked) {
+                await requestWakeLock();
+            } else {
+                await releaseWakeLock();
+            }
+            saveNotificationSettings();
+        }
+
+        // Re-acquire Wake Lock automatically when returning to the app
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && notifSettings.keepAwake) {
+                await requestWakeLock();
+            }
+        });
+
         async function handleMasterNotifToggle() {
             const checkbox = document.getElementById('toggle-all-notifs');
             if (checkbox.checked) {
                 if (!("Notification" in window)) {
-                    alert("This browser does not support desktop or mobile notifications.");
+                    alert("On iPhone/iPad, tap Share → Add to Home Screen first to enable notifications.");
                     checkbox.checked = false;
                     return;
                 }
@@ -530,7 +641,7 @@
                 if (permission === "granted") {
                     notifSettings.enabled = true;
                 } else {
-                    alert("Notification permission was denied. Please enable notifications in your browser settings.");
+                    alert("Notification permission was denied. Please enable notifications in your browser or device settings.");
                     checkbox.checked = false;
                     notifSettings.enabled = false;
                 }
@@ -569,7 +680,7 @@
 
         async function sendTestNotification() {
             if (!("Notification" in window)) {
-                alert("Notifications are not supported in this browser.");
+                alert("On iPhone/iPad, tap Share → Add to Home Screen first to enable notifications.");
                 return;
             }
             if (Notification.permission !== "granted") {
@@ -588,7 +699,7 @@
 
         // Check milestone notifications & Friday live banner
         function checkSabbathNotifications(now, diffMs) {
-            if (!notifSettings.enabled || Notification.permission !== "granted") return;
+            if (!notifSettings.enabled || !("Notification" in window) || Notification.permission !== "granted") return;
             if (!friSolarData) return;
 
             const friSunset = new Date(friSolarData.sunset);
