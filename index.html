@@ -122,7 +122,7 @@
             <div class="flex items-center gap-2 w-full sm:w-auto">
                 <div class="glass-card rounded-full p-1.5 flex items-center px-4 border border-white/10 w-full sm:w-72">
                     <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs mr-2.5"></i>
-                    <input type="text" id="city-input" placeholder="Search city (e.g., Charlotte, NC)" 
+                    <input type="text" id="city-input" placeholder="Search city (e.g., Oxford, WI)" 
                         class="bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none w-full"
                         onkeypress="handleSearch(event)">
                     <button onclick="searchCity()" class="text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold px-3 py-1.5 rounded-full hover:brightness-110 active:scale-95 transition">
@@ -419,7 +419,7 @@
     </div>
 
     <script>
-        // Data State
+        // Data State (Defaults to Manitowoc, WI until another location is saved)
         let currentLocation = {
             name: "Manitowoc, WI",
             lat: 44.0886,
@@ -443,10 +443,35 @@
         let lastConstantMinute = -1;
 
         window.onload = function() {
+            loadSavedLocation();
             loadNotificationSettings();
             calculateDatesAndFetch();
             startCountdownLoop();
         };
+
+        // Load & Save Last Viewed Location
+        function loadSavedLocation() {
+            try {
+                const savedLoc = localStorage.getItem('sabbathLastLocation');
+                if (savedLoc) {
+                    const parsed = JSON.parse(savedLoc);
+                    if (parsed && parsed.name && typeof parsed.lat === 'number' && typeof parsed.lng === 'number') {
+                        currentLocation = parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not load saved location:", e);
+            }
+            document.getElementById('location-display').innerText = currentLocation.name;
+        }
+
+        function saveLocation() {
+            try {
+                localStorage.setItem('sabbathLastLocation', JSON.stringify(currentLocation));
+            } catch (e) {
+                console.warn("Could not save location:", e);
+            }
+        }
 
         // Load saved notification preferences
         function loadNotificationSettings() {
@@ -578,6 +603,7 @@
             if (targetWeekday !== 'Friday') return;
 
             const dateKey = friSunset.toISOString().split('T')[0];
+            const locKey = `${currentLocation.lat.toFixed(2)},${currentLocation.lng.toFixed(2)}`;
 
             // Milestone checks (60m, 30m, 15m, 5m, 1m, and 0m)
             const milestones = [
@@ -590,7 +616,7 @@
 
             for (const m of milestones) {
                 const targetMs = m.mins * 60 * 1000;
-                const milestoneId = `${dateKey}-${m.mins}`;
+                const milestoneId = `${dateKey}-${locKey}-${m.mins}`;
                 // Trigger within a 5-second window of hitting the exact mark
                 if (timeToFriSunset <= targetMs && timeToFriSunset > targetMs - 5000 && !sentMilestones[milestoneId]) {
                     sentMilestones[milestoneId] = true;
@@ -603,7 +629,7 @@
             }
 
             // Sunset arrival alert
-            const startId = `${dateKey}-0`;
+            const startId = `${dateKey}-${locKey}-0`;
             if (timeToFriSunset <= 0 && timeToFriSunset > -5000 && !sentMilestones[startId]) {
                 sentMilestones[startId] = true;
                 triggerNotification(
@@ -706,6 +732,7 @@
                 const data = await res.json();
                 if (data && data.timeZone) {
                     currentLocation.timezone = data.timeZone;
+                    saveLocation();
                 }
             } catch (e) {
                 console.warn("Timezone API fallback error:", e);
@@ -882,18 +909,38 @@
             }, 1000);
         }
 
-        function refreshLocationData() {
+        async function refreshLocationData() {
             if (navigator.geolocation) {
                 document.getElementById('location-display').innerText = "Locating...";
                 navigator.geolocation.getCurrentPosition(
-                    (pos) => {
+                    async (pos) => {
                         currentLocation.lat = pos.coords.latitude;
                         currentLocation.lng = pos.coords.longitude;
-                        document.getElementById('location-display').innerText = `${currentLocation.lat.toFixed(2)}°, ${currentLocation.lng.toFixed(2)}°`;
+                        let displayName = `${currentLocation.lat.toFixed(2)}°, ${currentLocation.lng.toFixed(2)}°`;
+
+                        // Reverse geocode to get clean city/state name for display and notifications
+                        try {
+                            const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLocation.lat}&lon=${currentLocation.lng}`);
+                            const revData = await revRes.json();
+                            if (revData && revData.address) {
+                                const city = revData.address.city || revData.address.town || revData.address.village || revData.address.hamlet;
+                                const state = revData.address.state;
+                                if (city && state) {
+                                    displayName = `${city}, ${state}`;
+                                } else if (city) {
+                                    displayName = city;
+                                }
+                            }
+                        } catch (e) {}
+
+                        currentLocation.name = displayName;
+                        document.getElementById('location-display').innerText = currentLocation.name;
+                        saveLocation();
+                        lastConstantMinute = -1;
                         calculateDatesAndFetch();
                     },
                     (err) => {
-                        document.getElementById('location-display').innerText = "Manitowoc, WI";
+                        document.getElementById('location-display').innerText = currentLocation.name;
                         calculateDatesAndFetch();
                     }
                 );
@@ -907,16 +954,21 @@
             document.getElementById('location-display').innerText = "Searching...";
 
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(query)}`);
                 const data = await res.json();
 
                 if (data && data.length > 0) {
                     const place = data[0];
-                    currentLocation.name = place.display_name.split(',')[0];
+                    const addr = place.address || {};
+                    const city = addr.city || addr.town || addr.village || addr.hamlet || place.display_name.split(',')[0];
+                    const state = addr.state || "";
+                    
+                    currentLocation.name = state ? `${city}, ${state}` : city;
                     currentLocation.lat = parseFloat(place.lat);
                     currentLocation.lng = parseFloat(place.lon);
 
                     document.getElementById('location-display').innerText = currentLocation.name;
+                    saveLocation();
                     lastConstantMinute = -1;
                     calculateDatesAndFetch();
                 } else {
