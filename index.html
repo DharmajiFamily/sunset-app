@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-NXLQZW7H"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sabbath Countdown Website</title>
@@ -115,8 +109,8 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold tracking-widest text-amber-400 uppercase"></span>
-                        <span class="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded-full font-medium">Sunset Tracker</span>
+                        <span class="text-xs font-bold tracking-widest text-amber-400 uppercase">One UI 9.0</span>
+                        <span class="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded-full font-medium">Solar Suite</span>
                     </div>
                     <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
                         Sabbath Countdown
@@ -359,6 +353,56 @@
                     </div>
                 </div>
 
+                <!-- NOTIFICATION SETTINGS WIDGET -->
+                <div class="glass-panel rounded-oneui p-5 flex flex-col gap-3">
+                    <button onclick="toggleNotificationSettings()" class="flex justify-between items-center w-full text-left group">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-orange-500/15 text-orange-400 flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-bell"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white group-hover:text-amber-300 transition">Notification Settings</h3>
+                                <p id="notif-status-summary" class="text-[11px] text-slate-400">Alerts Off • Tap to configure</p>
+                            </div>
+                        </div>
+                        <i id="notif-chevron" class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-300"></i>
+                    </button>
+
+                    <!-- Collapsible Settings Body -->
+                    <div id="notif-settings-panel" class="hidden pt-3 border-t border-white/10 flex flex-col gap-3.5">
+                        
+                        <!-- Master Toggle -->
+                        <div class="flex items-center justify-between glass-card p-3 rounded-oneui-sm border border-white/5">
+                            <div>
+                                <p class="text-xs font-bold text-white">All Sabbath Alerts</p>
+                                <p class="text-[10px] text-slate-400">1h, 30m, 15m, 5m, 1m before sunset</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-all-notifs" class="sr-only peer" onchange="handleMasterNotifToggle()">
+                                <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Optional Constant Friday Countdown Toggle -->
+                        <div id="constant-fri-row" class="flex items-center justify-between glass-card p-3 rounded-oneui-sm border border-white/5 opacity-50 pointer-events-none transition-opacity">
+                            <div>
+                                <p class="text-xs font-bold text-white">Friday Live Countdown</p>
+                                <p class="text-[10px] text-slate-400">Updating Friday notification banner</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-constant-fri" class="sr-only peer" onchange="handleConstantFriToggle()">
+                                <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Test Notification Button -->
+                        <button onclick="sendTestNotification()" class="w-full py-2 rounded-oneui-sm bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-amber-300 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                            <span>Send Test Notification</span>
+                        </button>
+                    </div>
+                </div>
+
             </section>
 
         </main>
@@ -390,10 +434,202 @@
         let satSolarData = null;
         let targetSunsetDate = null;
 
+        // Notification State
+        let notifSettings = {
+            enabled: false,
+            constantFriday: false
+        };
+        let sentMilestones = {};
+        let lastConstantMinute = -1;
+
         window.onload = function() {
+            loadNotificationSettings();
             calculateDatesAndFetch();
             startCountdownLoop();
         };
+
+        // Load saved notification preferences
+        function loadNotificationSettings() {
+            try {
+                const saved = localStorage.getItem('sabbathNotifSettings');
+                if (saved) {
+                    notifSettings = JSON.parse(saved);
+                }
+            } catch (e) {}
+
+            document.getElementById('toggle-all-notifs').checked = notifSettings.enabled;
+            document.getElementById('toggle-constant-fri').checked = notifSettings.constantFriday;
+            updateNotifUIState();
+        }
+
+        function saveNotificationSettings() {
+            try {
+                localStorage.setItem('sabbathNotifSettings', JSON.stringify(notifSettings));
+            } catch (e) {}
+            updateNotifUIState();
+        }
+
+        function updateNotifUIState() {
+            const constantRow = document.getElementById('constant-fri-row');
+            const summary = document.getElementById('notif-status-summary');
+
+            if (notifSettings.enabled) {
+                constantRow.classList.remove('opacity-50', 'pointer-events-none');
+                summary.innerText = notifSettings.constantFriday 
+                    ? "Milestones + Friday Live Active" 
+                    : "Milestone Alerts Active";
+                summary.className = "text-[11px] text-amber-400 font-medium";
+            } else {
+                constantRow.classList.add('opacity-50', 'pointer-events-none');
+                summary.innerText = "Alerts Off • Tap to configure";
+                summary.className = "text-[11px] text-slate-400";
+            }
+        }
+
+        function toggleNotificationSettings() {
+            const panel = document.getElementById('notif-settings-panel');
+            const chevron = document.getElementById('notif-chevron');
+            panel.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        }
+
+        async function handleMasterNotifToggle() {
+            const checkbox = document.getElementById('toggle-all-notifs');
+            if (checkbox.checked) {
+                if (!("Notification" in window)) {
+                    alert("This browser does not support desktop or mobile notifications.");
+                    checkbox.checked = false;
+                    return;
+                }
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    notifSettings.enabled = true;
+                } else {
+                    alert("Notification permission was denied. Please enable notifications in your browser settings.");
+                    checkbox.checked = false;
+                    notifSettings.enabled = false;
+                }
+            } else {
+                notifSettings.enabled = false;
+            }
+            saveNotificationSettings();
+        }
+
+        function handleConstantFriToggle() {
+            notifSettings.constantFriday = document.getElementById('toggle-constant-fri').checked;
+            lastConstantMinute = -1;
+            saveNotificationSettings();
+        }
+
+        function triggerNotification(title, body, tag = 'sabbath-alert', silent = false) {
+            if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(title, {
+                        body: body,
+                        icon: 'icon.png',
+                        badge: 'icon.png',
+                        tag: tag,
+                        renotify: !silent,
+                        silent: silent
+                    });
+                }).catch(() => {
+                    new Notification(title, { body: body, icon: 'icon.png', tag: tag, silent: silent });
+                });
+            } else {
+                new Notification(title, { body: body, icon: 'icon.png', tag: tag, silent: silent });
+            }
+        }
+
+        async function sendTestNotification() {
+            if (!("Notification" in window)) {
+                alert("Notifications are not supported in this browser.");
+                return;
+            }
+            if (Notification.permission !== "granted") {
+                const perm = await Notification.requestPermission();
+                if (perm !== "granted") {
+                    alert("Please allow notifications to test alerts.");
+                    return;
+                }
+            }
+            triggerNotification(
+                "Sabbath Countdown Alert",
+                `Notifications are working! Tracking sunset for ${currentLocation.name}.`,
+                "sabbath-test"
+            );
+        }
+
+        // Check milestone notifications & Friday live banner
+        function checkSabbathNotifications(now, diffMs) {
+            if (!notifSettings.enabled || Notification.permission !== "granted") return;
+            if (!friSolarData) return;
+
+            const friSunset = new Date(friSolarData.sunset);
+            const timeToFriSunset = friSunset - now;
+
+            // Check if today is Friday in the target location's timezone
+            const targetWeekday = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                timeZone: currentLocation.timezone
+            });
+
+            if (targetWeekday !== 'Friday') return;
+
+            const dateKey = friSunset.toISOString().split('T')[0];
+
+            // Milestone checks (60m, 30m, 15m, 5m, 1m, and 0m)
+            const milestones = [
+                { mins: 60, label: "1 hour" },
+                { mins: 30, label: "30 minutes" },
+                { mins: 15, label: "15 minutes" },
+                { mins: 5,  label: "5 minutes" },
+                { mins: 1,  label: "1 minute" }
+            ];
+
+            for (const m of milestones) {
+                const targetMs = m.mins * 60 * 1000;
+                const milestoneId = `${dateKey}-${m.mins}`;
+                // Trigger within a 5-second window of hitting the exact mark
+                if (timeToFriSunset <= targetMs && timeToFriSunset > targetMs - 5000 && !sentMilestones[milestoneId]) {
+                    sentMilestones[milestoneId] = true;
+                    triggerNotification(
+                        `${m.label} until Sabbath`,
+                        `Sabbath begins at ${formatLocationTime(friSolarData.sunset)} in ${currentLocation.name}.`,
+                        `sabbath-milestone-${m.mins}`
+                    );
+                }
+            }
+
+            // Sunset arrival alert
+            const startId = `${dateKey}-0`;
+            if (timeToFriSunset <= 0 && timeToFriSunset > -5000 && !sentMilestones[startId]) {
+                sentMilestones[startId] = true;
+                triggerNotification(
+                    "Shabbat Shalom — Sabbath Has Begun",
+                    `Sunset has arrived in ${currentLocation.name}.`,
+                    "sabbath-begun"
+                );
+            }
+
+            // Optional constant Friday countdown (updates once per minute)
+            if (notifSettings.constantFriday && timeToFriSunset > 0) {
+                const totalMinutesLeft = Math.ceil(timeToFriSunset / 60000);
+                if (totalMinutesLeft !== lastConstantMinute) {
+                    lastConstantMinute = totalMinutesLeft;
+                    const hrs = Math.floor(totalMinutesLeft / 60);
+                    const mins = totalMinutesLeft % 60;
+                    const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+                    triggerNotification(
+                        `Sabbath in ${timeStr}`,
+                        `Sunset at ${formatLocationTime(friSolarData.sunset)} (${currentLocation.name})`,
+                        "sabbath-live-countdown",
+                        true
+                    );
+                }
+            }
+        }
 
         // Moon Phase Calculation Engine
         function getMoonPhaseData(date) {
@@ -626,6 +862,8 @@
 
                 let diff = target - now;
 
+                checkSabbathNotifications(now, diff);
+
                 if (diff <= 0) {
                     document.getElementById('countdown-timer').innerText = "00h 00m 00s";
                     document.getElementById('sun-progress-bar').style.width = "100%";
@@ -679,6 +917,7 @@
                     currentLocation.lng = parseFloat(place.lon);
 
                     document.getElementById('location-display').innerText = currentLocation.name;
+                    lastConstantMinute = -1;
                     calculateDatesAndFetch();
                 } else {
                     document.getElementById('location-display').innerText = "City Not Found";
