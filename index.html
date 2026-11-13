@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-NXLQZW7H"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sabbath Countdown Website</title>
@@ -107,7 +101,7 @@
     <!-- STANDALONE APPLICATION CANVAS -->
     <div class="max-w-4xl mx-auto px-4 py-6 sm:px-8 sm:py-10 flex flex-col gap-6 min-h-screen justify-between">
         
-        <!-- iOS INSTALL HELPER BANNER (Hidden automatically unless on iOS Safari outside standalone mode) -->
+        <!-- iOS INSTALL HELPER BANNER -->
         <div id="ios-install-banner" class="hidden glass-panel rounded-oneui p-4 border border-amber-500/40 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
@@ -130,8 +124,8 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold tracking-widest text-amber-400 uppercase">Sunset Tracker</span>
-                        
+                        <span class="text-xs font-bold tracking-widest text-amber-400 uppercase">One UI 9.0</span>
+                        <span class="text-[10px] bg-white/10 text-slate-300 px-2 py-0.5 rounded-full font-medium">Solar Suite</span>
                     </div>
                     <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
                         Sabbath Countdown
@@ -374,7 +368,7 @@
                     </div>
                 </div>
 
-                <!-- NOTIFICATION & DEVICE SETTINGS WIDGET -->
+                <!-- NOTIFICATION & DISPLAY SETTINGS WIDGET -->
                 <div class="glass-panel rounded-oneui p-5 flex flex-col gap-3">
                     <button onclick="toggleNotificationSettings()" class="flex justify-between items-center w-full text-left group">
                         <div class="flex items-center gap-2.5">
@@ -392,11 +386,17 @@
                     <!-- Collapsible Settings Body -->
                     <div id="notif-settings-panel" class="hidden pt-3 border-t border-white/10 flex flex-col gap-3.5">
                         
+                        <!-- Diagnostic Status -->
+                        <div class="text-[11px] text-slate-300 bg-white/5 px-3 py-2 rounded-xl border border-white/5 flex items-center justify-between">
+                            <span>Status:</span>
+                            <span id="notif-diagnostic" class="font-semibold text-amber-300">Checking...</span>
+                        </div>
+
                         <!-- Master Toggle -->
                         <div class="flex items-center justify-between glass-card p-3 rounded-oneui-sm border border-white/5">
                             <div>
                                 <p class="text-xs font-bold text-white">All Sabbath Alerts</p>
-                                <p class="text-[10px] text-slate-400">1h, 30m, 15m, 5m, 1m before sunset</p>
+                                <p class="text-[10px] text-slate-400">Master switch for notifications</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-all-notifs" class="sr-only peer" onchange="handleMasterNotifToggle()">
@@ -404,11 +404,36 @@
                             </label>
                         </div>
 
+                        <!-- Nested Card-Within-A-Card: Individual Sabbath Alarms -->
+                        <div id="alarms-subcard" class="glass-card rounded-oneui-sm p-3.5 border border-white/10 flex flex-col gap-3 transition-opacity">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                                    <i class="fa-solid fa-clock me-1"></i> Sabbath Alarms
+                                </span>
+                                <span class="text-[10px] text-slate-400">Before Friday Sunset</span>
+                            </div>
+
+                            <!-- Individual Alarm Cards List -->
+                            <div id="alarms-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+
+                            <!-- Add Custom Alarm Form -->
+                            <div class="pt-2 border-t border-white/10 flex items-center gap-2">
+                                <input type="number" id="custom-alarm-mins" min="1" max="720" placeholder="Mins before (e.g. 45)" 
+                                    class="bg-black/30 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 w-full"
+                                    onkeypress="if(event.key==='Enter') addCustomAlarm()">
+                                <button onclick="addCustomAlarm()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl active:scale-95 transition flex-shrink-0">
+                                    + Add
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Optional Constant Friday Countdown Toggle -->
                         <div id="constant-fri-row" class="flex items-center justify-between glass-card p-3 rounded-oneui-sm border border-white/5 opacity-50 pointer-events-none transition-opacity">
                             <div>
                                 <p class="text-xs font-bold text-white">Friday Live Countdown</p>
-                                <p class="text-[10px] text-slate-400">Updating Friday notification banner</p>
+                                <p class="text-[10px] text-slate-400">1-second updating banner on Friday</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-constant-fri" class="sr-only peer" onchange="handleConstantFriToggle()">
@@ -470,14 +495,24 @@
         let satSolarData = null;
         let targetSunsetDate = null;
 
+        // Default Individual Sabbath Alarms
+        const DEFAULT_ALARMS = [
+            { id: 'alarm-60', mins: 60, enabled: true, custom: false },
+            { id: 'alarm-30', mins: 30, enabled: true, custom: false },
+            { id: 'alarm-15', mins: 15, enabled: true, custom: false },
+            { id: 'alarm-5',  mins: 5,  enabled: true, custom: false },
+            { id: 'alarm-1',  mins: 1,  enabled: true, custom: false },
+            { id: 'alarm-0',  mins: 0,  enabled: true, custom: false }
+        ];
+
         // Notification & Display State
         let notifSettings = {
             enabled: false,
             constantFriday: false,
-            keepAwake: false
+            keepAwake: false,
+            alarms: DEFAULT_ALARMS
         };
         let sentMilestones = {};
-        let lastConstantMinute = -1;
         let wakeLockSentinel = null;
 
         window.onload = function() {
@@ -487,6 +522,112 @@
             calculateDatesAndFetch();
             startCountdownLoop();
         };
+
+        // Format minutes into human-readable alarm label
+        function formatAlarmLabel(mins) {
+            if (mins === 0) return "At Sunset";
+            if (mins % 60 === 0) {
+                const h = mins / 60;
+                return `${h} ${h === 1 ? 'hour' : 'hours'} before`;
+            }
+            if (mins > 60) {
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                return `${h}h ${m}m before`;
+            }
+            return `${mins} ${mins === 1 ? 'min' : 'mins'} before`;
+        }
+
+        // Render individual alarm cards inside the Alarms subcard
+        function renderAlarmsList() {
+            const container = document.getElementById('alarms-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Sort descending by minutes (e.g., 60m -> 30m -> 15m -> 5m -> 1m -> 0m)
+            const sortedAlarms = [...notifSettings.alarms].sort((a, b) => b.mins - a.mins);
+
+            sortedAlarms.forEach(alarm => {
+                const card = document.createElement('div');
+                card.className = `rounded-2xl p-2.5 border transition flex items-center justify-between gap-2 ${
+                    alarm.enabled 
+                        ? 'bg-white/10 border-amber-500/40' 
+                        : 'bg-black/25 border-white/5 opacity-70'
+                }`;
+
+                const labelText = formatAlarmLabel(alarm.mins);
+                const subText = alarm.mins === 0 ? "Sabbath arrival" : "Countdown alert";
+
+                card.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-white truncate">${labelText}</p>
+                        <p class="text-[10px] text-slate-400 truncate">${subText}</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        ${alarm.custom ? `
+                            <button onclick="deleteCustomAlarm('${alarm.id}')" class="text-slate-400 hover:text-rose-400 p-1 text-[11px] transition" title="Remove alarm">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        ` : ''}
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" ${alarm.enabled ? 'checked' : ''} class="sr-only peer" onchange="toggleIndividualAlarm('${alarm.id}')">
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function toggleIndividualAlarm(id) {
+            const alarm = notifSettings.alarms.find(a => a.id === id);
+            if (alarm) {
+                alarm.enabled = !alarm.enabled;
+                saveNotificationSettings();
+                renderAlarmsList();
+            }
+        }
+
+        function addCustomAlarm() {
+            const input = document.getElementById('custom-alarm-mins');
+            const val = parseInt(input.value, 10);
+            if (isNaN(val) || val < 1 || val > 720) {
+                alert("Please enter a valid number of minutes between 1 and 720.");
+                return;
+            }
+
+            // If an alarm for that minute already exists, just enable it
+            const existing = notifSettings.alarms.find(a => a.mins === val);
+            if (existing) {
+                existing.enabled = true;
+            } else {
+                notifSettings.alarms.push({
+                    id: `alarm-custom-${Date.now()}`,
+                    mins: val,
+                    enabled: true,
+                    custom: true
+                });
+            }
+
+            input.value = '';
+            saveNotificationSettings();
+            renderAlarmsList();
+        }
+
+        function deleteCustomAlarm(id) {
+            notifSettings.alarms = notifSettings.alarms.filter(a => a.id !== id);
+            saveNotificationSettings();
+            renderAlarmsList();
+        }
+
+        // Helper: Format local YYYY-MM-DD without UTC date shifting
+        function toLocalDateStr(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
 
         // Detect iOS Safari outside standalone Home Screen mode
         function checkIosInstallBanner() {
@@ -539,13 +680,24 @@
             try {
                 const saved = localStorage.getItem('sabbathNotifSettings');
                 if (saved) {
-                    notifSettings = { ...notifSettings, ...JSON.parse(saved) };
+                    const parsed = JSON.parse(saved);
+                    notifSettings = {
+                        ...notifSettings,
+                        ...parsed,
+                        alarms: Array.isArray(parsed.alarms) && parsed.alarms.length > 0 ? parsed.alarms : DEFAULT_ALARMS
+                    };
                 }
             } catch (e) {}
+
+            // Auto-sync if permission was revoked in OS settings
+            if ("Notification" in window && Notification.permission !== "granted") {
+                notifSettings.enabled = false;
+            }
 
             document.getElementById('toggle-all-notifs').checked = notifSettings.enabled;
             document.getElementById('toggle-constant-fri').checked = notifSettings.constantFriday;
             document.getElementById('toggle-wake-lock').checked = notifSettings.keepAwake;
+            renderAlarmsList();
             updateNotifUIState();
 
             if (notifSettings.keepAwake) {
@@ -562,16 +714,36 @@
 
         function updateNotifUIState() {
             const constantRow = document.getElementById('constant-fri-row');
+            const alarmsSubcard = document.getElementById('alarms-subcard');
             const summary = document.getElementById('notif-status-summary');
+            const diag = document.getElementById('notif-diagnostic');
+
+            const perm = ("Notification" in window) ? Notification.permission : "unsupported";
+            const isFri = new Date().getDay() === 5;
+            const activeAlarmsCount = notifSettings.alarms.filter(a => a.enabled).length;
+
+            if (diag) {
+                if (perm !== "granted") {
+                    diag.innerText = `Permission: ${perm}`;
+                } else if (isFri) {
+                    diag.innerText = notifSettings.constantFriday
+                        ? `Friday Live On • ${activeAlarmsCount} Alarms`
+                        : `Friday Detected • ${activeAlarmsCount} Alarms Active`;
+                } else {
+                    diag.innerText = `Ready (${activeAlarmsCount} Alarms Set)`;
+                }
+            }
 
             if (notifSettings.enabled) {
                 constantRow.classList.remove('opacity-50', 'pointer-events-none');
+                alarmsSubcard.classList.remove('opacity-50', 'pointer-events-none');
                 summary.innerText = notifSettings.constantFriday 
-                    ? "Milestones + Friday Live Active" 
-                    : "Milestone Alerts Active";
+                    ? `${activeAlarmsCount} Alarms + Friday Live Active` 
+                    : `${activeAlarmsCount} Sabbath Alarms Active`;
                 summary.className = "text-[11px] text-amber-400 font-medium";
             } else {
                 constantRow.classList.add('opacity-50', 'pointer-events-none');
+                alarmsSubcard.classList.add('opacity-50', 'pointer-events-none');
                 summary.innerText = notifSettings.keepAwake
                     ? "Alerts Off • Screen Awake On"
                     : "Alerts Off • Tap to configure";
@@ -584,6 +756,7 @@
             const chevron = document.getElementById('notif-chevron');
             panel.classList.toggle('hidden');
             chevron.classList.toggle('rotate-180');
+            updateNotifUIState();
         }
 
         // Screen Wake Lock Management (Windows, Android, iOS 16.4+)
@@ -628,7 +801,6 @@
             saveNotificationSettings();
         }
 
-        // Re-acquire Wake Lock automatically when returning to the app
         document.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'visible' && notifSettings.keepAwake) {
                 await requestWakeLock();
@@ -659,14 +831,17 @@
 
         function handleConstantFriToggle() {
             notifSettings.constantFriday = document.getElementById('toggle-constant-fri').checked;
-            lastConstantMinute = -1;
             saveNotificationSettings();
+            if (notifSettings.constantFriday && targetSunsetDate) {
+                const now = new Date();
+                checkSabbathNotifications(now, targetSunsetDate - now);
+            }
         }
 
         function triggerNotification(title, body, tag = 'sabbath-alert', silent = false) {
             if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(reg => {
                     reg.showNotification(title, {
                         body: body,
@@ -703,7 +878,7 @@
             );
         }
 
-        // Check milestone notifications & Friday live banner
+        // Check individual alarms & 1-second Friday live banner
         function checkSabbathNotifications(now, diffMs) {
             if (!notifSettings.enabled || !("Notification" in window) || Notification.permission !== "granted") return;
             if (!friSolarData) return;
@@ -711,66 +886,58 @@
             const friSunset = new Date(friSolarData.sunset);
             const timeToFriSunset = friSunset - now;
 
-            // Check if today is Friday in the target location's timezone
-            const targetWeekday = now.toLocaleDateString('en-US', {
-                weekday: 'long',
-                timeZone: currentLocation.timezone
-            });
+            let targetWeekday = "";
+            try {
+                targetWeekday = now.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    timeZone: currentLocation.timezone
+                });
+            } catch (e) {}
 
-            if (targetWeekday !== 'Friday') return;
+            const isFriday = targetWeekday === 'Friday' || now.getDay() === 5;
+            if (!isFriday) return;
 
-            const dateKey = friSunset.toISOString().split('T')[0];
+            const dateKey = toLocalDateStr(friSunset);
             const locKey = `${currentLocation.lat.toFixed(2)},${currentLocation.lng.toFixed(2)}`;
 
-            // Milestone checks (60m, 30m, 15m, 5m, 1m, and 0m)
-            const milestones = [
-                { mins: 60, label: "1 hour" },
-                { mins: 30, label: "30 minutes" },
-                { mins: 15, label: "15 minutes" },
-                { mins: 5,  label: "5 minutes" },
-                { mins: 1,  label: "1 minute" }
-            ];
+            // Check each enabled individual alarm
+            for (const alarm of notifSettings.alarms) {
+                if (!alarm.enabled) continue;
 
-            for (const m of milestones) {
-                const targetMs = m.mins * 60 * 1000;
-                const milestoneId = `${dateKey}-${locKey}-${m.mins}`;
-                // Trigger within a 5-second window of hitting the exact mark
-                if (timeToFriSunset <= targetMs && timeToFriSunset > targetMs - 5000 && !sentMilestones[milestoneId]) {
+                const targetMs = alarm.mins * 60 * 1000;
+                const milestoneId = `${dateKey}-${locKey}-${alarm.mins}`;
+
+                if (timeToFriSunset <= targetMs && timeToFriSunset > targetMs - 10000 && !sentMilestones[milestoneId]) {
                     sentMilestones[milestoneId] = true;
-                    triggerNotification(
-                        `${m.label} until Sabbath`,
-                        `Sabbath begins at ${formatLocationTime(friSolarData.sunset)} in ${currentLocation.name}.`,
-                        `sabbath-milestone-${m.mins}`
-                    );
+                    if (alarm.mins === 0) {
+                        triggerNotification(
+                            "Shabbat Shalom — Sabbath Has Begun",
+                            `Sunset has arrived in ${currentLocation.name}.`,
+                            "sabbath-begun"
+                        );
+                    } else {
+                        triggerNotification(
+                            `${formatAlarmLabel(alarm.mins)} Sabbath`,
+                            `Sabbath begins at ${formatLocationTime(friSolarData.sunset)} in ${currentLocation.name}.`,
+                            `sabbath-milestone-${alarm.mins}`
+                        );
+                    }
                 }
             }
 
-            // Sunset arrival alert
-            const startId = `${dateKey}-${locKey}-0`;
-            if (timeToFriSunset <= 0 && timeToFriSunset > -5000 && !sentMilestones[startId]) {
-                sentMilestones[startId] = true;
-                triggerNotification(
-                    "Shabbat Shalom — Sabbath Has Begun",
-                    `Sunset has arrived in ${currentLocation.name}.`,
-                    "sabbath-begun"
-                );
-            }
-
-            // Optional constant Friday countdown (updates once per minute)
+            // Optional constant Friday countdown (updates every second)
             if (notifSettings.constantFriday && timeToFriSunset > 0) {
-                const totalMinutesLeft = Math.ceil(timeToFriSunset / 60000);
-                if (totalMinutesLeft !== lastConstantMinute) {
-                    lastConstantMinute = totalMinutesLeft;
-                    const hrs = Math.floor(totalMinutesLeft / 60);
-                    const mins = totalMinutesLeft % 60;
-                    const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-                    triggerNotification(
-                        `Sabbath in ${timeStr}`,
-                        `Sunset at ${formatLocationTime(friSolarData.sunset)} (${currentLocation.name})`,
-                        "sabbath-live-countdown",
-                        true
-                    );
-                }
+                const hrs = Math.floor(timeToFriSunset / (1000 * 60 * 60));
+                const mins = Math.floor((timeToFriSunset / (1000 * 60)) % 60);
+                const secs = Math.floor((timeToFriSunset / 1000) % 60);
+                const timeStr = `${String(hrs).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
+
+                triggerNotification(
+                    `${timeStr} until Sabbath`,
+                    `Sunset at ${formatLocationTime(friSolarData.sunset)} (${currentLocation.name})`,
+                    "sabbath-live-countdown",
+                    true
+                );
             }
         }
 
@@ -883,8 +1050,8 @@
             try {
                 await fetchTimezone(lat, lng);
 
-                const friStr = friDate.toISOString().split('T')[0];
-                const satStr = satDate.toISOString().split('T')[0];
+                const friStr = toLocalDateStr(friDate);
+                const satStr = toLocalDateStr(satDate);
 
                 const [friRes, satRes] = await Promise.all([
                     fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${friStr}&formatted=0`),
@@ -934,6 +1101,7 @@
                 document.getElementById('next-sunset-time').innerText = `Sabbath Begins: Next Friday at ${formatLocationTime(friSolarData.sunset)}`;
             }
 
+            updateNotifUIState();
             renderTabMetrics();
         }
 
@@ -1035,7 +1203,6 @@
                         currentLocation.lng = pos.coords.longitude;
                         let displayName = `${currentLocation.lat.toFixed(2)}°, ${currentLocation.lng.toFixed(2)}°`;
 
-                        // Reverse geocode to get clean city/state name for display and notifications
                         try {
                             const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLocation.lat}&lon=${currentLocation.lng}`);
                             const revData = await revRes.json();
@@ -1053,7 +1220,6 @@
                         currentLocation.name = displayName;
                         document.getElementById('location-display').innerText = currentLocation.name;
                         saveLocation();
-                        lastConstantMinute = -1;
                         calculateDatesAndFetch();
                     },
                     (err) => {
@@ -1086,7 +1252,6 @@
 
                     document.getElementById('location-display').innerText = currentLocation.name;
                     saveLocation();
-                    lastConstantMinute = -1;
                     calculateDatesAndFetch();
                 } else {
                     document.getElementById('location-display').innerText = "City Not Found";
