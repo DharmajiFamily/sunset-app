@@ -479,6 +479,27 @@
 
     </div>
 
+    <!-- FIRST-VISIT BOTTOM "INSTALL OUR APP" BANNER -->
+    <div id="install-app-banner" class="hidden fixed bottom-4 left-4 right-4 z-50 max-w-xl mx-auto glass-panel rounded-oneui p-4 border border-amber-500/40 shadow-2xl flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 shadow-md">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <div class="min-w-0">
+                <p class="text-sm font-bold text-white truncate">Install our app</p>
+                <p class="text-[11px] text-slate-300 truncate">Download Sabbath Countdown (.apk)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button onclick="dismissInstallAppBanner()" class="px-3.5 py-2 rounded-full glass-card text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition">
+                No
+            </button>
+            <a href="./Sabbath_Countdown.apk" download="Sabbath_Countdown.apk" onclick="acceptInstallAppBanner()" class="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs hover:brightness-110 active:scale-95 transition shadow-lg shadow-orange-500/20">
+                Yes
+            </a>
+        </div>
+    </div>
+
     <script>
         // Data State (Defaults to Manitowoc, WI until another location is saved)
         let currentLocation = {
@@ -516,12 +537,38 @@
         let wakeLockSentinel = null;
 
         window.onload = function() {
+            checkInstallAppBanner();
             checkIosInstallBanner();
             loadSavedLocation();
             loadNotificationSettings();
             calculateDatesAndFetch();
             startCountdownLoop();
         };
+
+        // First-visit "Install our app" bottom banner logic
+        function checkInstallAppBanner() {
+            try {
+                const answered = localStorage.getItem('sabbathInstallAppPromptAnswered');
+                if (answered === 'true') return;
+                document.getElementById('install-app-banner').classList.remove('hidden');
+            } catch (e) {}
+        }
+
+        function dismissInstallAppBanner() {
+            document.getElementById('install-app-banner').classList.add('hidden');
+            try {
+                localStorage.setItem('sabbathInstallAppPromptAnswered', 'true');
+            } catch (e) {}
+        }
+
+        function acceptInstallAppBanner() {
+            try {
+                localStorage.setItem('sabbathInstallAppPromptAnswered', 'true');
+            } catch (e) {}
+            setTimeout(() => {
+                document.getElementById('install-app-banner').classList.add('hidden');
+            }, 500);
+        }
 
         // Format minutes into human-readable alarm label
         function formatAlarmLabel(mins) {
