@@ -468,8 +468,8 @@
 
         </main>
 
-        <!-- "INSTALL OUR APP" BAR (Floats on first visit, docks permanently at the bottom of the page after) -->
-        <div id="install-app-banner" class="fixed bottom-4 left-4 right-4 z-50 max-w-xl mx-auto glass-panel rounded-oneui p-4 border border-amber-500/40 shadow-2xl flex items-center justify-between gap-3 transition-all duration-300">
+        <!-- "INSTALL OUR APP" CARD AT THE BOTTOM OF THE PAGE -->
+        <div class="w-full glass-panel rounded-oneui p-4 border border-amber-500/30 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-purple-600 flex items-center justify-center text-white flex-shrink-0 shadow-md">
                     <i class="fa-solid fa-mobile-screen-button"></i>
@@ -479,14 +479,9 @@
                     <p class="text-[11px] text-slate-300 truncate">Download Sabbath Countdown (.apk)</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-                <button id="install-no-btn" onclick="dockInstallAppBanner()" class="px-3.5 py-2 rounded-full glass-card text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 active:scale-95 transition">
-                    No
-                </button>
-                <a id="install-yes-btn" href="./Sabbath_Countdown.apk" download="Sabbath_Countdown.apk" onclick="acceptInstallAppBanner()" class="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs hover:brightness-110 active:scale-95 transition shadow-lg shadow-orange-500/20">
-                    Yes
-                </a>
-            </div>
+            <a href="./Sabbath_Countdown.apk" download="Sabbath_Countdown.apk" class="px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold text-xs hover:brightness-110 active:scale-95 transition shadow-lg shadow-orange-500/20 flex-shrink-0">
+                Download
+            </a>
         </div>
 
         <!-- FOOTER -->
@@ -537,48 +532,12 @@
         let wakeLockSentinel = null;
 
         window.onload = function() {
-            checkInstallAppBanner();
             checkIosInstallBanner();
             loadSavedLocation();
             loadNotificationSettings();
             calculateDatesAndFetch();
             startCountdownLoop();
         };
-
-        // Move the "Install our app" bar from floating overlay to docked at the bottom of the page
-        function applyDockedBannerLayout() {
-            const banner = document.getElementById('install-app-banner');
-            const noBtn = document.getElementById('install-no-btn');
-            const yesBtn = document.getElementById('install-yes-btn');
-            if (!banner) return;
-
-            banner.className = "w-full glass-panel rounded-oneui p-4 border border-amber-500/30 flex items-center justify-between gap-3 mt-2";
-            if (noBtn) noBtn.classList.add('hidden');
-            if (yesBtn) yesBtn.innerText = "Download";
-        }
-
-        function checkInstallAppBanner() {
-            try {
-                const answered = localStorage.getItem('sabbathInstallAppPromptAnswered');
-                if (answered === 'true') {
-                    applyDockedBannerLayout();
-                }
-            } catch (e) {}
-        }
-
-        function dockInstallAppBanner() {
-            try {
-                localStorage.setItem('sabbathInstallAppPromptAnswered', 'true');
-            } catch (e) {}
-            applyDockedBannerLayout();
-        }
-
-        function acceptInstallAppBanner() {
-            try {
-                localStorage.setItem('sabbathInstallAppPromptAnswered', 'true');
-            } catch (e) {}
-            setTimeout(applyDockedBannerLayout, 400);
-        }
 
         // Format minutes into human-readable alarm label
         function formatAlarmLabel(mins) {
